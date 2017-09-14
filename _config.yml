@@ -7,13 +7,13 @@
 
 # Site Settings
 locale                   : "en-US"
-title                    : "Your Name / Site Title"
+title                    : "Filipi N. Silva"
 title_separator          : "-"
-name                     : &name "Your Name"
-description              : &description "personal description"
-url                      : https://academicpages.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
+name                     : &name "Filipi N. Silva"
+description              : &description "Description here"
+url                      : https://filipinascimento.github.io # the base hostname & protocol for your site e.g. "https://mmistakes.github.io"
 baseurl                  : "" # the subpath of your site, e.g. "/blog"
-repository               : "academicpages/academicpages.github.io"
+repository               : "filipinascimento/"
 teaser                   :  # filename of teaser fallback teaser image placed in /images/, .e.g. "500x300.png"
 breadcrumbs              : false # true, false (default)
 words_per_minute         : 160
@@ -78,13 +78,13 @@ analytics:
 
 # Site Author
 author:
-  name             : "Your Sidebar Name"
-  avatar           : "profile.png"
-  bio              : "Your biography for the left-hand sidebar"
-  location         : "Location"
+  name             : "Filipi Nascimento Silva"
+  avatar           : "profile.jpg"
+  bio              : "Bachelor, Master and Ph.D. in computational physics from the São Carlos Institute of Physics (University of São Paulo). Currently holding a post-doc position at the same institute. Have experience with the analysis of complex systems, data visualization, scientific publication, framework development and web development. Published papers on indexed international scientific journals and developed new scientific applications and frameworks. Interested in modeling and analyzing complex systems by using complex networks and visualization techniques on a wide range of scientific areas such as: bioinformatics, text analysis, scientometry, information science and urban networks."
+  location         : "Bloomington, IN, USA"
   employer         :
-  googlescholar    : "http://yourfullgooglescholarurl.com"
-  email            :
+  googlescholar    : "https://scholar.google.com.br/citations?user=fhWJEysAAAAJ"
+  email            : "filipinascimento@gmail.com"
   uri              :
   bitbucket        :
   codepen          :
@@ -92,23 +92,23 @@ author:
   flickr           :
   facebook         :
   foursquare       :
-  github           : "academicpages"
+  github           : "filipinascimento"
   google_plus      :
   keybase          :
   instagram        :
   lastfm           :
   linkedin         :
-  orcid            : "http://orcid.org/yourorcidurl"
+  orcid            : "http://orcid.org/0000-0002-9151-6517"
   pinterest        :
   soundcloud       :
   stackoverflow    : # http://stackoverflow.com/users/123456/username
   steam            :
   tumblr           :
-  twitter          : "replacethistwitterhandle"
+  twitter          : 
   vine             :
   weibo            :
   xing             :
-  youtube          :
+  youtube          : "filipinascimento"
   wikipedia        :
 
 
