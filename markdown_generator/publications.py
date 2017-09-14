@@ -23,26 +23,20 @@
 
 # In[2]:
 
-import pandas as pd
 
 
-# ## Import TSV
-# 
-# Pandas makes this easy with the read_csv function. We are using a TSV, so we specify the separator as a tab, or `\t`.
-# 
-# I found it important to put this data in a tab-separated values format, because there are a lot of commas in this kind of data and comma-separated values can get messed up. However, you can modify the import statement, as pandas also has read_excel(), read_json(), and others.
 
-# In[3]:
+import bibtexparser
+from bibtexparser.bparser import BibTexParser
+from bibtexparser.customization import convert_to_unicode
 
-publications = pd.read_csv("publications.tsv", sep="\t", header=0)
-publications
+with open('citations.bib') as bibtex_file:
+    parser = BibTexParser()
+    parser.customization = convert_to_unicode
+    bib_database = bibtexparser.load(bibtex_file, parser = parser)
+    print(bib_database.entries)
 
-
-# ## Escape special characters
-# 
-# YAML is very picky about how it takes a valid string, so we are replacing single and double quotes (and ampersands) with their HTML encoded equivilents. This makes them look not so readable in raw format, but they are parsed and rendered nicely.
-
-# In[4]:
+publications = bib_database.entries;
 
 html_escape_table = {
     "&": "&amp;",
@@ -62,15 +56,15 @@ def html_escape(text):
 # In[5]:
 
 import os
-for row, item in publications.iterrows():
+for item in publications:
     
-    md_filename = str(item.pub_date) + "-" + item.url_slug + ".md"
-    html_filename = str(item.pub_date) + "-" + item.url_slug
+    md_filename = str(item["year"]) + "-" + item.["ID"].replace(":","-") + ".md"
+    html_filename = str(item["year"]) + "-" + item.["ID"].replace(":","-")
     year = item.pub_date[:4]
     
     ## YAML variables
     
-    md = "---\ntitle: \""   + item.title + '"\n'
+    md = "---\ntitle: \""   + item["title"] + '"\n'
     
     md += """collection: publications"""
     
