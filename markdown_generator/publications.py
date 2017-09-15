@@ -89,7 +89,7 @@ for item in publications:
     md += """collection: publications"""
     
     md += """\npermalink: /publication/""" + (str(item["year"]) + "-" + item["ID"].replace(":","-"))
-    md += """\nexcerpt: 'test'"""
+    #md += """\nexcerpt: 'test'"""
     
     if("author" in item):
         authstr = item["author"];
@@ -122,14 +122,14 @@ for item in publications:
     if "link" in item:
         md += "\npaperurl: '" + item["link"] + "'";
     
-    md += "\ncitation: '" + "BibTex" + "'";
+    #md += "\ncitation: '" + "BibTex" + "'";
     
     md += "\n---";
     
     ## Markdown description for individual page
     
     if "link" in item:
-        md += "\n[BibTex](//files/bibtex/" + html_filename + ".bib" + "')\n" 
+        md += "\n[BibTex](http://filipinascimento.github.io/files/bibtex/" + html_filename + ".bib" + ")\n" 
         
     md_filename = os.path.basename(md_filename)
        
