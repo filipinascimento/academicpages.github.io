@@ -106,7 +106,7 @@ for item in publications:
     venues = [];
 
     if("journal" in item):
-        venues.append("<i>"+item["journal"]+"<\i>");
+        venues.append(item["journal"]);
         if("volume" in item):
             venues.append("v. "+item["volume"]);
         if("number" in item):

@@ -4,6 +4,6 @@ collection: publications
 permalink: /publication/2015-moreira2015modular
 authors: "C. A. Moreira-Filho, S. Y. Bando, F. B. Bertonha, F. N. Silva, L. da F. Costa, L. R. Fereira, M. Carneiro-Sampaio"
 date: 2015-01-01
-venue: '<i>Journal of Clinical Immunology<\i>, v. 35, n. 3, p. 315--315'
+venue: 'Journal of Clinical Immunology, v. 35, n. 3, p. 315--315'
 bibtex: "moreira2015modular.bib"
 ---
