@@ -88,7 +88,8 @@ for item in publications:
     
     md += """collection: publications"""
     
-    md += """\npermalink: /publication/""" + html_filename
+    md += """\npermalink: /publication/""" + (str(item["year"]) + "-" + item["ID"].replace(":","-"))
+    md += """\nexcerpt: 'test'"""
     
     if("author" in item):
         authstr = item["author"];
@@ -110,27 +111,27 @@ for item in publications:
         else:
           authors = item["author"];
         authors = authors.replace('{\lowercase{d}a F}','da F');
-        md += "\nauthors: " + html_escape(authors)
+        md += "\nauthors: \""  + html_escape(authors)+'"';
 
-    md += "\ndate: " + str(item["year"]) 
+    md += "\ndate: " + str(item["year"])+"-01-01";
     
-    md += "\nvenue: '" + html_escape(venue) + "'"
+    md += "\nvenue: '" + html_escape(venue) + "'";
 
-    md += "\nbibtex: \""   + html_filename + ".bib"
+    md += "\nbibtex: \""   + html_filename + ".bib\"";
     
     if "link" in item:
-        md += "\npaperurl: '" + item["link"] + "'"
+        md += "\npaperurl: '" + item["link"] + "'";
     
-   # md += "\ncitation: '" + html_escape(item.citation) + "'"
+    md += "\ncitation: '" + "BibTex" + "'";
     
-    md += "\n---"
+    md += "\n---";
     
     ## Markdown description for individual page
     
-    # if len(str(item.paper_url)) > 5:
-    #     md += "\n\n<a href='" + item.paper_url + "'>Download paper here</a>\n" 
+    if "link" in item:
+        md += "\n[BibTex](//files/bibtex/" + html_filename + ".bib" + "')\n" 
         
-    # md_filename = os.path.basename(md_filename)
+    md_filename = os.path.basename(md_filename)
        
     with open("../_publications/" + md_filename, 'w') as f:
         f.write(md)
