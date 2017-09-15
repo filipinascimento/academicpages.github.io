@@ -69,5 +69,8 @@
     {% if post.doi %}
       <br />doi: <a href="http://dx.doi.org/{{ post.doi }}"><u>{{ post.doi }}</u></a>
     {% endif %}
+    {% if post.bibtex %}
+      <br /><a href="http://filipinascimento.github.io/{{ post.bibtex }}"><u>Get BibTex</u></a>
+    {% endif %}
   </article>
 </div>
