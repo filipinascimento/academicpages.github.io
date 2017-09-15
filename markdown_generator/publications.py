@@ -28,6 +28,8 @@
 
 import bibtexparser
 from bibtexparser.bparser import BibTexParser
+from bibtexparser.bwriter import BibTexWriter
+from bibtexparser.bibdatabase import BibDatabase
 from bibtexparser.customization import convert_to_unicode
 
 with open('citations.bib') as bibtex_file:
@@ -58,43 +60,77 @@ def html_escape(text):
 import os
 for item in publications:
     
-    md_filename = str(item["year"]) + "-" + item.["ID"].replace(":","-") + ".md"
-    html_filename = str(item["year"]) + "-" + item.["ID"].replace(":","-")
-    year = item.pub_date[:4]
-    
-    ## YAML variables
-    
+    md_filename = str(item["year"]) + "-" + item["ID"].replace(":","-") + ".md"
+    html_filename = item["ID"].replace(":","-")
+    year = item["year"]
+
+    db = BibDatabase();
+    writer = BibTexWriter()
+    db.entries = [item];
+
+    with open("../files/bibtex/" + html_filename + ".bib", 'w') as bibfile:
+        bibfile.write(writer.write(db));
+
+    venues = [];
+
+    if("journal" in item):
+        venues.append(item["journal"]);
+        if("volume" in item):
+            venues.append("v. "+item["volume"]);
+        if("number" in item):
+            venues.append("n. "+item["number"]);
+        if("pages" in item):
+            venues.append("p. "+item["pages"]);
+
+    venue = ", ".join(venues)+".";
+
     md = "---\ntitle: \""   + item["title"] + '"\n'
     
     md += """collection: publications"""
     
     md += """\npermalink: /publication/""" + html_filename
     
-    if len(str(item.excerpt)) > 5:
-        md += "\nexcerpt: '" + html_escape(item.excerpt) + "'"
+    if("author" in item):
+        authstr = item["author"];
+        authors = "";
+        numcommas = 0;
+        if ("," in item["author"]):
+          numcommas += 1
+          authstrauthors = authstr.split(" and ")
+          for ia, author in enumerate(authstrauthors):
+            if ("," in author):
+              authorparts = author.split(", ")
+              # the first part [0] is last name, needs to become last
+              # get and remove the first part, then append it as last
+              lastname = authorparts.pop(0)
+              authorparts.append(lastname)
+              authorfirstlast = " ".join(authorparts)
+              authstrauthors[ia] = authorfirstlast
+          authors = ", ".join(authstrauthors);
+        else:
+          authors = item["author"];
+        authors = authors.replace('{\lowercase{d}a F}','da F');
+        md += "\nauthors: " + html_escape(authors)
+
+    md += "\ndate: " + str(item["year"]) 
     
-    md += "\ndate: " + str(item.pub_date) 
+    md += "\nvenue: '" + html_escape(venue) + "'"
+
+    md += "\nbibtex: \""   + html_filename + ".bib"
     
-    md += "\nvenue: '" + html_escape(item.venue) + "'"
+    if "link" in item:
+        md += "\npaperurl: '" + item["link"] + "'"
     
-    if len(str(item.paper_url)) > 5:
-        md += "\npaperurl: '" + item.paper_url + "'"
-    
-    md += "\ncitation: '" + html_escape(item.citation) + "'"
+   # md += "\ncitation: '" + html_escape(item.citation) + "'"
     
     md += "\n---"
     
     ## Markdown description for individual page
     
-    if len(str(item.paper_url)) > 5:
-        md += "\n\n<a href='" + item.paper_url + "'>Download paper here</a>\n" 
+    # if len(str(item.paper_url)) > 5:
+    #     md += "\n\n<a href='" + item.paper_url + "'>Download paper here</a>\n" 
         
-    if len(str(item.excerpt)) > 5:
-        md += "\n" + html_escape(item.excerpt) + "\n"
-        
-    md += "\nRecommended citation: " + item.citation
-    
-    md_filename = os.path.basename(md_filename)
+    # md_filename = os.path.basename(md_filename)
        
     with open("../_publications/" + md_filename, 'w') as f:
         f.write(md)
