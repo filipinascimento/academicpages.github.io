@@ -71,18 +71,6 @@ for item in publications:
     with open("../files/bibtex/" + html_filename + ".bib", 'w') as bibfile:
         bibfile.write(writer.write(db));
 
-    venues = [];
-
-    if("journal" in item):
-        venues.append(item["journal"]);
-        if("volume" in item):
-            venues.append("v. "+item["volume"]);
-        if("number" in item):
-            venues.append("n. "+item["number"]);
-        if("pages" in item):
-            venues.append("p. "+item["pages"]);
-
-    venue = ", ".join(venues)+".";
 
     md = "---\ntitle: \""   + item["title"] + '"\n'
     
@@ -115,21 +103,33 @@ for item in publications:
 
     md += "\ndate: " + str(item["year"])+"-01-01";
     
-    md += "\nvenue: '" + html_escape(venue) + "'";
+    venues = [];
+
+    if("journal" in item):
+        venues.append("<i>"+item["journal"]+"<\i>");
+        if("volume" in item):
+            venues.append("v. "+item["volume"]);
+        if("number" in item):
+            venues.append("n. "+item["number"]);
+        if("pages" in item):
+            venues.append("p. "+item["pages"]);
+        venue = ", ".join(venues);
+        md += "\nvenue: '" + html_escape(venue) + "'";
 
     md += "\nbibtex: \""   + html_filename + ".bib\"";
     
     if "link" in item:
         md += "\npaperurl: '" + item["link"] + "'";
     
+    if "doi" in item:
+        md += "\ndoi: " + item["doi"];
     #md += "\ncitation: '" + "BibTex" + "'";
     
     md += "\n---";
     
     ## Markdown description for individual page
     
-    if "link" in item:
-        md += "\n[BibTex](http://filipinascimento.github.io/files/bibtex/" + html_filename + ".bib" + ")\n" 
+    #md += "\n[BibTex](http://filipinascimento.github.io/files/bibtex/" + html_filename + ".bib" + ")\n" 
         
     md_filename = os.path.basename(md_filename)
        

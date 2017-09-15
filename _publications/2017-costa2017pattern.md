@@ -4,8 +4,7 @@ collection: publications
 permalink: /publication/2017-costa2017pattern
 authors: "L. da F. Costa, F. N. Silva, C. H. Comin"
 date: 2017-01-01
-venue: 'arXiv preprint arXiv:1708.00469.'
+venue: '<i>arXiv preprint arXiv:1708.00469<\i>'
 bibtex: "costa2017pattern.bib"
 paperurl: 'http://arxiv.org/abs/1708.00469'
 ---
-[BibTex](http://filipinascimento.github.io/files/bibtex/costa2017pattern.bib)
