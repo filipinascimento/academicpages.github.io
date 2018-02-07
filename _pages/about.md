@@ -7,6 +7,11 @@ redirect_from:
   - /about/
   - /about.html
 ---
-Bachelor, Master and Ph.D. in computational physics from the São Carlos Institute of Physics (University of São Paulo). Currently holding a post-doc position at the same institute. Have experience with the analysis of complex systems, data visualization, scientific publication, framework development and web development. Published papers on indexed international scientific journals and developed new scientific applications and frameworks. Interested in modeling and analyzing complex systems by using complex networks and visualization techniques on a wide range of scientific areas such as: bioinformatics, text analysis, scientometry, information science and urban networks.
+I'm Filipi Nascimento Silva, Ph.D. in computational physics, currently working as a visiting research scholar at the School of Informatics, Computing and Engineering - Indiana University. 
 
-Site under development.
+##Research
+My interests include developing and implementing new techniques for analyzing, modeling and understanding real-world systems through complex networks, machine learning and data visualization.
+
+
+##Experience
+I've published papers and developed software on many scientific fields, including bioinformatics, text analysis, scientometry, information science, and urban networks. My current focus is in science of science and network visualization.
