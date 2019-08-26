@@ -3,14 +3,27 @@
 
 async function startVisualization() {
 	var canvas = d3.select("#networkView").append("canvas");
-	var svg = d3.select("#networkView").append("svg").attr("id", "mainview");
+	var svg = d3.select("#networkView").append("svg").attr("class", "plot");
 
 	let width = 100;
 	let height = 100;
 
-	let startIndex=120;
-
+	let startIndex = 5;
+	let currentNetwork;
 	let color = d3.scaleOrdinal(d3.schemeCategory10);
+	let partiesNames = {
+		"psdb": "PSDB",
+		"dem": "DEM",
+		"mdb": "MDB",
+		"pt": "PT",
+		"pp": "PP",
+		"pr": "PR",
+		"pcdob": "PCdoB",
+		"psb": "PSB",
+		"ptb": "PTB",
+		"pl": "PL",
+		// "pdt": "PDT"
+	};
 	let partiesToColors = {};
 	let showParties = true;
 	let topTopParties = [];
@@ -26,7 +39,8 @@ async function startVisualization() {
 	let scaleFactor = 0.0;
 	let targetScaleFactor = 1.0;
 	let linesIntensity = 0.2;
-	let linesWidth = 2.0;
+	let linesWidth = 4.0;
+	let nodesSize = 5;
 
 	let xscale = d3.scaleLinear();
 	let yscale = d3.scaleLinear();
@@ -40,6 +54,27 @@ async function startVisualization() {
 	let colorsBuffer = null;
 	let intensitiesBuffer = null;
 	let edgesShaderProgram = null;
+
+	d3.select('#saveSVGButton').on('click', function () {
+		var config = {
+			filename: currentNetwork.name,
+		}
+		if (!renderLinksSVG) {
+			createSVGLinks();
+			updateSVGLinks(100.0);
+		}
+		let toSaveSVG = d3.select("#networkView").append("svg")
+			.classed("plot", true)
+			.attr("width", width)
+			.attr("height", height)
+			.html(d3.select("svg").html());
+		d3_save_svg.save(toSaveSVG.node(), config);
+		toSaveSVG.remove();
+
+		if (!renderLinksSVG) {
+			deleteSVGLinks();
+		}
+	});
 
 	let gl;
 	if (renderLinksGL) {
@@ -61,6 +96,7 @@ async function startVisualization() {
 
 
 
+	// if(!svgDefs)
 	let svgDefs = svg.append('defs');
 	let existingDef = new Set();
 	let gradient = (colorFrom, colorTo) => {
@@ -92,21 +128,29 @@ async function startVisualization() {
 	let links = [];
 
 
-	var simulation = d3.forceSimulation(nodes)
-		.force("charge", d3.forceManyBody().strength(-20))
-		.force("link",
+	let forceLinks = 
 			d3.forceLink(links)
-				.id(d => d.id)
-				.strength(d => d.weight*2)
-			// .distance(d => 1.0/d.weight)
+				.id(d => d.id);
+	forceLinks.strength(d=>3*d.weight/Math.min(d.target.neigh.length, d.source.neigh.length))
+				
+	var simulation = d3.forceSimulation(nodes)
+		.force("charge", d3.forceManyBody()
+			.strength(-20)
+			// .distanceMin(0.1)
+			// .theta(0.5)
+
+		)
+		.force("link",
+		forceLinks
 		)
 		.force("center", d3.forceCenter(0, 0))
-		.force("x", d3.forceX().strength(0.1))
-		.force("y", d3.forceY().strength(0.1))
+		.force("x", d3.forceX().strength(0.05))
+		.force("y", d3.forceY().strength(0.05))
 		// .alphaTarget(10)
-		.alphaDecay(0.005)
-		.velocityDecay(0.8)
+		.alphaDecay(0.0025)
+		.velocityDecay(0.6)
 		.on("tick", redraw);
+
 
 	var g = svg.append("g");
 
@@ -116,7 +160,18 @@ async function startVisualization() {
 	let nodesView = g.append("g").selectAll(".node");
 
 
+	let legendView = svg.append("g")
+		.attr("transform", "translate(10," + "10" + ")");
+
+
+	let hoverTextBox = svg.append("g");
+
+	let hoverText = hoverTextBox
+		.append("text")
+		.attr("text-anchor","end");
+
 	function setDrawNetwork(network) {
+		currentNetwork = network;
 		let newNodes = [];
 		let nodesDictionary = {};
 		let ID2Nodes = {};
@@ -146,6 +201,8 @@ async function startVisualization() {
 					}
 				}
 				node.index = newNodes.length;
+				node.neigh = [];
+				node.strength = 0;
 				newNodes.push(node);
 				nodesDictionary[index] = node;
 				ID2Nodes[node.id] = node;
@@ -155,14 +212,19 @@ async function startVisualization() {
 		for (let index = 0; index < network.edges.length; index++) {
 			let edge = network.edges[index];
 			if (majorComponentSet.has(edge[0]) && majorComponentSet.has(edge[1])) {
+				let fromNode = nodesDictionary[edge[0]];
+				let toNode = nodesDictionary[edge[1]];
 
-					links.push({
-						source: nodesDictionary[edge[0]],
-						target: nodesDictionary[edge[1]],
-						weight: network.weights[index],
-						// source: edge[0],
-						// target: edge[1],
-					});
+				let edgeObject = {
+					source: fromNode,
+					target: toNode,
+					weight: network.weights[index],
+				}
+				fromNode.neigh.push(toNode);
+				toNode.neigh.push(fromNode);
+				fromNode.strength=edgeObject.weight;
+				toNode.strength=edgeObject.weight;
+				links.push(edgeObject);
 			}
 		}
 
@@ -174,8 +236,33 @@ async function startVisualization() {
 				newNode.y = node.y;
 				newNode.vx = node.vx;
 				newNode.vy = node.vy;
+				newNode.existed = true;
 			}
 		});
+
+		newNodes.forEach(node => {
+			let sumX = 0;
+			let sumY = 0;
+			let sumVX = 0;
+			let sumVY = 0;
+			let sumCount = 0;
+			if (!node.existed) {
+				node.neigh.forEach(neighNode => {
+					if (neighNode.existed) {
+						sumX += neighNode.x;
+						sumY += neighNode.y;
+						sumVX += neighNode.vx;
+						sumVY += neighNode.vy;
+						sumCount++;
+					}
+				});
+				node.x = sumX / sumCount;
+				node.y = sumVY / sumCount;
+				node.vx = sumVX / sumCount;
+				node.vy = sumVY / sumCount;
+			}
+		});
+
 		nodes = newNodes;
 	}
 
@@ -201,9 +288,9 @@ async function startVisualization() {
 				if (partiesToColors.hasOwnProperty(d.political_party)) {
 					d.color = partiesToColors[d.political_party];
 				} else {
-					if(useDarkBackground){
+					if (useDarkBackground) {
 						d.color = "#333333";
-					}else{
+					} else {
 						d.color = "#cccccc";
 					}
 				}
@@ -219,29 +306,25 @@ async function startVisualization() {
 			.merge(nodesView)
 			.style('opacity', 1)
 			.attr("fill", d => d.color)
-			.attr("r", 1.5);
+			.attr("r", nodesSize)
+			.on("mouseover", function(d){
+				d3.select(this).attr("r",nodesSize*2)
+				.attr("stroke", d3.rgb(d.color).darker(1))
+				.attr("stroke-width", 2);
+				hoverText.attr("fill", d.color)
+				.text(`${d["id"]} (${d["political_party"]})`);
+			})
+			.on("mouseout", function(d){
+				d3.select(this).attr("r",nodesSize)
+				.attr("stroke", null)
+				.attr("stroke-width", null);
+
+				hoverText.text(null);
+			})
+
 
 		if (renderLinksSVG) {
-			linksView = linksView.data(links, d => d.source.id + "-" + d.target.id);
-			linksView.exit().remove();
-
-			if (renderGradientLinks) {
-				let linkNew = linksView.enter().append("g");
-
-				linkNew.append("line")
-					.attr("stroke", d => d.color)
-					.attr("opacity", 0.1)
-					.attr("x1", 0)
-					.attr("y1", 0)
-					.attr("x2", 1.0 / Math.sqrt(2))
-					.attr("y2", 1.0 / Math.sqrt(2));//Hack
-
-				linksView = linkNew.merge(linksView);
-			} else {
-				let linkNew = linksView.enter().append("line")
-					.attr("opacity", 0.1);
-				linksView = linkNew.merge(linksView);
-			}
+			createSVGLinks();
 		}
 
 		if (renderLinksGL) {
@@ -255,6 +338,85 @@ async function startVisualization() {
 		simulation
 			.alpha(1.0)
 			.restart();
+
+		updateLegend();
+	}
+
+	function createSVGLinks() {
+		linksView = linksView.data(links, d => d.source.id + "-" + d.target.id);
+		linksView.exit().remove();
+
+		if (renderGradientLinks) {
+			let linkNew = linksView.enter().append("g");
+
+			linkNew.append("line")
+				.attr("stroke", d => d.color)
+				.attr("opacity", 0.1)
+				.attr("x1", 0)
+				.attr("y1", 0)
+				.attr("x2", 1.0 / Math.sqrt(2))
+				.attr("y2", 1.0 / Math.sqrt(2));//Hack
+
+			linksView = linkNew.merge(linksView);
+		} else {
+			let linkNew = linksView.enter().append("line")
+				.attr("opacity", 0.1);
+			linksView = linkNew.merge(linksView);
+		}
+	}
+
+	function deleteSVGLinks() {
+		linksView = linksView.data([]);
+		linksView.exit().remove();
+	}
+	function updateSVGLinks(strokeFactor = 2.0) {
+		if (renderGradientLinks) {
+			linksView.attr("transform", d => {
+				return getTransformForLine(
+					xscale(d.source.x),
+					yscale(d.source.y),
+					xscale(d.target.x),
+					yscale(d.target.y),
+				);
+			}).attr("stroke-width", d => {
+				return strokeFactor / getStrokeCorrectionForLine(
+					xscale(d.source.x),
+					yscale(d.source.y),
+					xscale(d.target.x),
+					yscale(d.target.y),
+				);
+			});
+		} else {
+			linksView
+				.attr("x1", d => xscale(d.source.x))
+				.attr("y1", d => yscale(d.source.y))
+				.attr("x2", d => xscale(d.target.x))
+				.attr("y2", d => yscale(d.target.y));
+		}
+	}
+
+	function updateLegend() {
+		let legendItems = legendView.selectAll(".legend").data(Object.keys(partiesToColors));
+		legendItems.exit().remove();
+
+
+		legendItems.enter().append("g")
+			.attr("transform", (d, i) => ("translate(0," + (i * 20) + ")"))
+			.classed("legend", true);
+
+		legendItems.append("rect")
+			.attr("x", 0)
+			.attr("y", 0)
+			.attr("width", 30)
+			.attr("height", 15)
+			.attr("fill", d => partiesToColors[d]);
+
+		legendItems.append("g")
+			.attr("transform", (d) => (`translate(${35},${15 / 2})`))
+			.append("text")
+			.text(d => partiesNames[d])
+			.style("alignment-baseline", "central");
+
 	}
 
 	function updateGLNodesAndEdges() {
@@ -266,8 +428,8 @@ async function startVisualization() {
 
 	function updateNodesGLGeometry() {
 		nodes.forEach((node, index) => {
-			positionArray[index * 2] = (node.x ? ((xscale(node.x)) / width * dpr - 1) : 0.0);
-			positionArray[index * 2 + 1] = (node.y ? (-(yscale(node.y)) / height * dpr + 1) : 0.0);
+			positionArray[index * 2] = (node.x ? ((xscale(node.x)) / width * 2 - 1) : 0.0);
+			positionArray[index * 2 + 1] = (node.y ? (-(yscale(node.y)) / height * 2 + 1) : 0.0);
 		});
 		// for (let index = 0; index < nodes.length; index+=2) {
 		// 	positionArray[index*2] = 0;
@@ -373,6 +535,8 @@ async function startVisualization() {
 		canvasNode.height = height * dpr;
 
 
+		hoverTextBox
+			.attr("transform", `translate(${width-20},30)`);
 
 		let xextent = d3.extent(nodes, d => d.x);
 		let yextent = d3.extent(nodes, d => d.y);
@@ -457,31 +621,8 @@ async function startVisualization() {
 		}
 
 		if (renderLinksSVG) {
-			if (renderGradientLinks) {
-				linksView.attr("transform", d => {
-					return getTransformForLine(
-						xscale(d.source.x),
-						yscale(d.source.y),
-						xscale(d.target.x),
-						yscale(d.target.y),
-					);
-				}).attr("stroke-width", d => {
-					return 2.0 / getStrokeCorrectionForLine(
-						xscale(d.source.x),
-						yscale(d.source.y),
-						xscale(d.target.x),
-						yscale(d.target.y),
-					);
-				});
-			} else {
-				linksView
-					.attr("x1", d => xscale(d.source.x))
-					.attr("y1", d => yscale(d.source.y))
-					.attr("x2", d => xscale(d.target.x))
-					.attr("y2", d => yscale(d.target.y));
-			}
+			updateSVGLinks();
 		}
-
 	}
 
 
@@ -496,38 +637,70 @@ async function startVisualization() {
 		"pl": "pr",
 		"prona": "pr",
 		"pmdb": "mdb",
+	}
 
-	}
-	for (let year = 1995; year <= 2018; year++) {
-		for (let month = 1; month <= 12; month++) {
-			let network = null;
-			try {
-				network = await readNetworkFile(`networks/dep_${year}_${month}_0.8_leidenalg_dist.xnet`);
-				// console.log((new Set(net.names)).size-net.names.length);
-				let partiesArray = network.verticesProperties["political_party"].map(party => {
-					if (partyDictionary.hasOwnProperty(party)) {
-						return partyDictionary[party];
-					} else {
-						return party;
-					}
-				});
-				topParties.push(...partiesArray);//sortByFrequency(partiesArray).slice(0,10));
-			} catch (error) {
-				console.log("ERROR");
-			}
-			networks.push(network);
-			timeIndices.push([month, year]);
+	// for (let year = 1995; year <= 2018; year++) {
+	// 	for (let month = 1; month <= 12; month++) {
+	// 		let network = null;
+	// 		try {
+	// 			let filename = `dep_${year}_${month}_0.8_leidenalg_dist`;
+	// 			network = await readNetworkFile("networks/"+filename+".xnet");
+	// 			network.name = filename;
+	// 			// console.log((new Set(net.names)).size-net.names.length);
+	// 			let partiesArray = network.verticesProperties["political_party"].map(party => {
+	// 				if (partyDictionary.hasOwnProperty(party)) {
+	// 					return partyDictionary[party];
+	// 				} else {
+	// 					return party;
+	// 				}
+	// 			});
+	// 			network.verticesProperties["political_party"] = partiesArray;
+	// 			topParties.push(...partiesArray);//sortByFrequency(partiesArray).slice(0,10));
+	// 		} catch (error) {
+	// 			console.log("ERROR");
+	// 		}
+	// 		networks.push(network);
+	// 		timeIndices.push([month, year]);
+	// 	}
+	// }
+
+
+	for (let year = 1995; year <= 2019; year++) {
+		let network = null;
+		try {
+			let filename = `dep_${year}_obstr_0.8_leidenalg_dist`;
+			network = await readNetworkFile("Networks/" + filename + ".xnet");
+			network.name = filename;
+			// console.log((new Set(net.names)).size-net.names.length);
+			let partiesArray = network.verticesProperties["political_party"].map(party => {
+				if (partyDictionary.hasOwnProperty(party)) {
+					return partyDictionary[party];
+				} else {
+					return party;
+				}
+			});
+			network.verticesProperties["political_party"] = partiesArray;
+			topParties.push(...partiesArray);//sortByFrequency(partiesArray).slice(0,10));
+		} catch (error) {
+			console.log("ERROR");
 		}
+		networks.push(network);
+		timeIndices.push([0, year]);
 	}
+
 	topTopParties = sortByFrequency(topParties).slice(0, 20);
 	console.log(topTopParties);
 	let partyColorFunction = d3.scaleOrdinal(d3.schemeCategory10);
-	["psdb", "dem", "mdb", "pt", "pp", "pr",].forEach(party=>{
-		partyColorFunction(party);
-	});
-	topTopParties.forEach(party => {
-		partiesToColors[party] = partyColorFunction(party);
-	});
+
+	for (const party in partiesNames) {
+		if (partiesNames.hasOwnProperty(party)) {
+			partiesToColors[party] = partyColorFunction(party);
+		}
+	}
+
+	// topTopParties.forEach(party => {
+	// 	partiesToColors[party] = partyColorFunction(party);
+	// });
 
 
 	setDrawNetwork(networks[startIndex]);
@@ -542,7 +715,7 @@ async function startVisualization() {
 
 	d3.select("#timeSlider")
 		.property("max", timeIndices.length - 1)
-		.property("value",startIndex)
+		.property("value", startIndex)
 		.on("input", function input() {
 			window.setNetwork(+this.value);
 		});
@@ -557,40 +730,41 @@ async function startVisualization() {
 			redraw();
 		});
 	});
-	function redrawRuler(){
-		let timeRulerSVG = d3.select("#timeRule");
-			let ruleWidth = timeRulerSVG.node().clientWidth;
-			let ruleHeight = timeRulerSVG.node().clientHeight;
-			let ruleScale = d3.scaleTime()
-				.range([5, ruleWidth-5])
-				.domain([new Date(1995, 0, 1),new Date(2018, 11, 1)]);
-			timeRulerSVG.selectAll("*").remove();
-			timeRulerSVG.append("g")
-			.attr("class", "axis")
-					.attr("transform", "translate(0," + "20" + ")")
-					.call(d3.axisTop(ruleScale)
-									.ticks(d3.timeYear.every(1))
-									.tickFormat(d3.timeFormat("")))
 
-			timeRulerSVG.append("g")
+	function redrawRuler() {
+		let timeRulerSVG = d3.select("#timeRule");
+		let ruleWidth = timeRulerSVG.node().clientWidth;
+		let ruleHeight = timeRulerSVG.node().clientHeight;
+		let ruleScale = d3.scaleTime()
+			.range([5, ruleWidth - 5])
+			.domain([new Date(1995, 0, 1), new Date(2018, 11, 1)]);
+		timeRulerSVG.selectAll("*").remove();
+		timeRulerSVG.append("g")
 			.attr("class", "axis")
-					.attr("transform", "translate(0," + "20" + ")")
-					.call(d3.axisTop(ruleScale)
-									.ticks(d3.timeYear.every(2))
-									.tickFormat(d3.timeFormat("%Y")))
-					// .selectAll("text")	
-					//   .style("text-anchor", "end")
-					//   .attr("dx", "-.8em")
-					//   .attr("dy", ".15em")
-					//   .attr("transform", "rotate(-65)");
-		
+			.attr("transform", "translate(0," + "20" + ")")
+			.call(d3.axisTop(ruleScale)
+				.ticks(d3.timeYear.every(1))
+				.tickFormat(d3.timeFormat("")))
+
+		timeRulerSVG.append("g")
+			.attr("class", "axis")
+			.attr("transform", "translate(0," + "20" + ")")
+			.call(d3.axisTop(ruleScale)
+				.ticks(d3.timeYear.every(2))
+				.tickFormat(d3.timeFormat("%Y")))
+		// .selectAll("text")	
+		//   .style("text-anchor", "end")
+		//   .attr("dx", "-.8em")
+		//   .attr("dy", ".15em")
+		//   .attr("transform", "rotate(-65)");
+
 	}
 	function zoomAnimation() {
 		redraw();
 		myRequestAnimationFrame(zoomAnimation);
 	}
-	
-	
+
+
 	myRequestAnimationFrame(zoomAnimation);
 }
 

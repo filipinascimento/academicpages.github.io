@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <head>
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <style>
 
 	html, body {
-		font-family: "Helvetica Neue", Helvetica, sans-serif;
-		font-size: 14px;
+		font-family: "Helvetica Neue Light", Helvetica, sans-serif;
+		font-size: 12px;
 		border: none;
 		padding: 0px;
 		margin: 0px;
@@ -36,7 +38,7 @@
 	}
 	
 
-	#mainview{
+	.plot{
 		font-family: "Helvetica Neue", Helvetica, sans-serif;
 		font-size: 14px;
 		position:fixed;
@@ -54,11 +56,11 @@
 		width:100% ;
 	}
 
-	#mainview line{
+	.plot line{
 		shape-rendering:auto;
 	}
 
-	#mainview .tick{
+	.plot .tick{
 		font-size:13px;
 	}
 
@@ -106,6 +108,7 @@
  #timeRule{
 		flex: 1 1 30px;
 		height:30px;
+		overflow: visible;
  }
 input[type="range"]{
   display:inline-block;
@@ -172,6 +175,10 @@ input[type="range"]::-webkit-slider-thumb{
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
+}
+
+svg text{
+	font-family: "Helvetica Neue Light", Helvetica, sans-serif;
 }
 </style>
 
