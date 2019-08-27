@@ -297,6 +297,7 @@ tag_archive:
 #     tag: /tags/:name/
 
 permalink: /visualizer/
+permalink: /visualizer/Networks/
 
 
 # HTML Compression
