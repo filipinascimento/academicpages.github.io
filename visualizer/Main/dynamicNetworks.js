@@ -644,7 +644,7 @@ async function startVisualization() {
 	// 		let network = null;
 	// 		try {
 	// 			let filename = `dep_${year}_${month}_0.8_leidenalg_dist`;
-	// 			network = await readNetworkFile("networks/"+filename+".xnet");
+	// 			network = await readNetworkFile("Data/"+filename+".xnet");
 	// 			network.name = filename;
 	// 			// console.log((new Set(net.names)).size-net.names.length);
 	// 			let partiesArray = network.verticesProperties["political_party"].map(party => {
@@ -669,7 +669,7 @@ async function startVisualization() {
 		let network = null;
 		try {
 			let filename = `dep_${year}_obstr_0.8_leidenalg_dist`;
-			network = await readNetworkFile("Networks/" + filename + ".xnet");
+			network = await readNetworkFile("Data/" + filename + ".xnet");
 			network.name = filename;
 			// console.log((new Set(net.names)).size-net.names.length);
 			let partiesArray = network.verticesProperties["political_party"].map(party => {
