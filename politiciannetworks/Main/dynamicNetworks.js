@@ -516,7 +516,13 @@ async function startVisualization() {
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, edgesBuffer);
 
 		//gl.uniform2fv(edgesShaderProgram.uniforms.nearFar,[0.1,10.0]);
-		gl.uniform1f(edgesShaderProgram.uniforms.linesIntensity, linesIntensity);
+
+		let maxLineIntensity = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE)[1];
+		let currentLineIntensity = linesIntensity;
+		if(maxLineIntensity==1 && linesIntensity<0.5){
+			currentLineIntensity*=2;
+		}
+		gl.uniform1f(edgesShaderProgram.uniforms.linesIntensity, currentLineIntensity);
 
 		//drawElements is called only 1 time. no overhead from javascript
 		gl.drawElements(gl.LINES, edgesIndices.length, indexType, 0);
