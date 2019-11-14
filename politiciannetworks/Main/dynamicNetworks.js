@@ -39,7 +39,7 @@ async function startVisualization() {
 	let scaleFactor = 0.0;
 	let targetScaleFactor = 1.0;
 	let linesIntensity = 0.2;
-	let linesWidth = 4.0;
+	let linesWidth = 2.0;
 	let nodesSize = 5;
 	let needsUpdate = false;
 
@@ -162,6 +162,7 @@ async function startVisualization() {
 
 
 	let legendView = svg.append("g")
+		.classed("legend",true)
 		.attr("transform", "translate(10," + "10" + ")");
 
 
@@ -401,20 +402,24 @@ async function startVisualization() {
 		legendItems.exit().remove();
 
 
-		legendItems.enter().append("g")
-			.attr("transform", (d, i) => ("translate(0," + (i * 20) + ")"))
-			.classed("legend", true);
+		let legendEnter = legendItems.enter().append("g")
+			.classed("legend", true)
+			.attr("transform", (d, i) => ("translate(0," + (i * 20) + ")"));
 
-		legendItems.append("rect")
+		legendEnter.append("rect");
+		legendEnter.append("g").append("text");
+		legendItems = legendItems.merge(legendEnter)
+
+		legendItems.select("rect")
 			.attr("x", 0)
 			.attr("y", 0)
 			.attr("width", 30)
 			.attr("height", 15)
 			.attr("fill", d => partiesToColors[d]);
 
-		legendItems.append("g")
+		legendItems.select("g")
 			.attr("transform", (d) => (`translate(${35},${15 / 2})`))
-			.append("text")
+			.select("text")
 			.text(d => partiesNames[d])
 			.style("alignment-baseline", "central");
 
@@ -473,6 +478,8 @@ async function startVisualization() {
 	}
 
 	function redrawEdgesGL() {
+
+		dpr = window.devicePixelRatio || 1;
 		needsUpdate = false;
 		// gl.depthMask(false);
 		if (useDarkBackground) {
@@ -483,7 +490,7 @@ async function startVisualization() {
 
 		gl.clear(gl.COLOR_BUFFER_BIT);
 
-		gl.lineWidth(linesWidth);
+		gl.lineWidth(linesWidth*dpr);
 		gl.enable(gl.BLEND);
 		if (useDarkBackground) {
 			gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -527,7 +534,7 @@ async function startVisualization() {
 		let canvasNode = canvas.node();
 		width = svgNode.clientWidth;
 		height = svgNode.clientHeight;
-
+		
 
 		dpr = window.devicePixelRatio || 1;
 
