@@ -977,10 +977,11 @@ $().ready(function(){
 				startScale=event.scale;
 			}
 			networkCanvas2D.ongesturechange = function(event){
-				// console.log(event.scale);
+				console.log(event.scale);
 				 touchMinScale *= event.scale ;
 				var delta = event.scale-startScale;
-				cameraDistance+=(1-delta)*2;
+				console.log(delta);
+				cameraDistance+=(-delta)*2;
 				if(cameraDistance<0.01){
 					cameraDistance=0.01;
 				}else if(cameraDistance>10){
