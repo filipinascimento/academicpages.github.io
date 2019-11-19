@@ -972,13 +972,15 @@ $().ready(function(){
 			$(networkCanvas2D).bind("touchmove",handleMouseMove);
 			
 			
-			
+			var startScale = 1.0;
+			networkCanvas2D.ongesturestart = function(event){
+				startScale=event.scale;
+			}
 			networkCanvas2D.ongesturechange = function(event){
-				console.log(event.scale);
+				// console.log(event.scale);
 				 touchMinScale *= event.scale ;
-
-
-				cameraDistance+=(1-event.scale)*2;
+				var delta = event.scale-startScale;
+				cameraDistance+=(1-delta)*2;
 				if(cameraDistance<0.01){
 					cameraDistance=0.01;
 				}else if(cameraDistance>10){
@@ -989,8 +991,11 @@ $().ready(function(){
 					if(!animate){
 						redraw();
 					}
-
+				startScale = event.scale;
 			};
+			networkCanvas2D.ongestureEnd = function(event){
+				startScale=1.0;
+			}
 			
 			
 			networkCanvas2D.ontouchmove = function(event) {
