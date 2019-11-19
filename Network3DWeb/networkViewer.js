@@ -973,8 +973,23 @@ $().ready(function(){
 			
 			
 			
-			networkCanvas2D.ongestureend = function(event){
+			networkCanvas2D.ongesturechange = function(event){
+				console.log(event.scale);
 				 touchMinScale *= event.scale ;
+
+
+				cameraDistance+=(1-event.scale)*10;
+				if(cameraDistance<0.01){
+					cameraDistance=0.01;
+				}else if(cameraDistance>10){
+					cameraDistance = 10;
+				}
+				//requestAnimFrame(function(){
+					redrawingFromMouseWheelEvent = true;
+					if(!animate){
+						redraw();
+					}
+
 			};
 			
 			
