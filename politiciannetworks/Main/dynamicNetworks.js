@@ -346,8 +346,8 @@ async function startVisualization() {
 			})
 			.on("mouseout", function(d){
 				d3.select(this).attr("r",d=>d.size)
-				.attr("stroke", null)
-				.attr("stroke-width", null);
+				.attr("stroke", d => d3.rgb(d.color).darker(0.5))
+				.attr("stroke-width", 1.0);
 
 				hoverText.text(null);
 			})
