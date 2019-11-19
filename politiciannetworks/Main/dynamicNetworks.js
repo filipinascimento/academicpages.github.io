@@ -8,7 +8,7 @@ async function startVisualization() {
 	let width = 100;
 	let height = 100;
 
-	let startIndex = 5;
+	let startIndex = 10;
 	let currentNetwork;
 	let color = d3.scaleOrdinal(d3.schemeCategory10);
 	let partiesNames = {
@@ -40,7 +40,11 @@ async function startVisualization() {
 	let targetScaleFactor = 1.0;
 	let linesIntensity = 0.2;
 	let linesWidth = 2.0;
-	let nodesSize = 5;
+	let maxNodeSize = 4;
+	let minNodeSize = 4;
+	let maxStrength = 50;
+	let minStrength = 50;
+	let sizePowerCoeff = 1.0;
 	let needsUpdate = false;
 
 	let xscale = d3.scaleLinear();
@@ -55,6 +59,7 @@ async function startVisualization() {
 	let colorsBuffer = null;
 	let intensitiesBuffer = null;
 	let edgesShaderProgram = null;
+
 
 	d3.select('#saveSVGButton').on('click', function () {
 		var config = {
@@ -79,7 +84,7 @@ async function startVisualization() {
 
 	let gl;
 	if (renderLinksGL) {
-		gl = createWebGLContext(canvas.node(), { antialias: true });
+		gl = createWebGLContext(canvas.node(), { antialias: true, powerPreference :"high-performance",desynchronized:true});
 		let edgesShaderVertex = await getShader(gl, "edges-vertex");
 		let edgesShaderFragment = await getShader(gl, "edges-fragment");
 
@@ -136,7 +141,8 @@ async function startVisualization() {
 				
 	var simulation = d3.forceSimulation(nodes)
 		.force("charge", d3.forceManyBody()
-			.strength(-20)
+			.strength(d=> -((1-d.sizeFactor)*minStrength+(d.sizeFactor)*maxStrength))
+			// .strength(-20)
 			// .distanceMin(0.1)
 			// .theta(0.5)
 
@@ -147,6 +153,7 @@ async function startVisualization() {
 		.force("center", d3.forceCenter(0, 0))
 		.force("x", d3.forceX().strength(0.04))
 		.force("y", d3.forceY().strength(0.04))
+		// .force('collision', d3.forceCollide().radius(d=> d.size*2))
 		// .alphaTarget(10)
 		.alphaDecay(0.01)
 		.velocityDecay(0.5)
@@ -300,6 +307,25 @@ async function startVisualization() {
 		} else {
 			nodes.forEach(d => d.color = color(d.community));
 		}
+
+		let nodesSizes = [];
+		nodes.forEach(d => {
+			d.size = maxNodeSize;
+			d.degrees = 0;
+		});
+		//Degrees as color:
+		links.forEach(d => {
+			d.source.degrees+=d.weight;
+			d.target.degrees+=d.weight;
+		});
+		let maxDegrees = d3.max(nodes,d=>d.degrees);
+		let minDegrees = d3.min(nodes,d=>d.degrees);
+		nodes.forEach(d => {
+			let s = (d.degrees-minDegrees)/(maxDegrees-minDegrees);
+			s = Math.pow(s,sizePowerCoeff);
+			d.sizeFactor = s;
+			d.size = (1-s)*minNodeSize+s*maxNodeSize;
+		});
 		links.forEach(d => d.color = gradient(d.source.color, d.target.color));
 		// Apply the general update pattern to the nodes.
 		nodesView = nodesView.data(nodes, function (d) { return d.id; });
@@ -307,17 +333,19 @@ async function startVisualization() {
 		nodesView = nodesView.enter().append("circle")
 			.merge(nodesView)
 			.style('opacity', 1)
+			.attr("stroke", d => d3.rgb(d.color).darker(0.5))
+			.attr("stroke-width", 1.0)
 			.attr("fill", d => d.color)
-			.attr("r", nodesSize)
+			.attr("r", d => d.size)
 			.on("mouseover", function(d){
-				d3.select(this).attr("r",nodesSize*2)
+				d3.select(this).attr("r",d.size*2)
 				.attr("stroke", d3.rgb(d.color).darker(1))
 				.attr("stroke-width", 2);
 				hoverText.attr("fill", d.color)
 				.text(`${d["id"]} (${d["political_party"]})`);
 			})
 			.on("mouseout", function(d){
-				d3.select(this).attr("r",nodesSize)
+				d3.select(this).attr("r",d=>d.size)
 				.attr("stroke", null)
 				.attr("stroke-width", null);
 
@@ -474,7 +502,6 @@ async function startVisualization() {
 		gl.bindBuffer(gl.ARRAY_BUFFER, colorsBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, colorArray, gl.DYNAMIC_DRAW);
 		// console.log(`Update Colors Done! (${colorArray.length})` );
-
 	}
 
 	function redrawEdgesGL() {
@@ -520,7 +547,7 @@ async function startVisualization() {
 		let maxLineIntensity = gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE)[1];
 		let currentLineIntensity = linesIntensity;
 		if(maxLineIntensity==1 && linesIntensity<0.5){
-			currentLineIntensity*=2;
+			currentLineIntensity*=2*dpr;
 		}
 		gl.uniform1f(edgesShaderProgram.uniforms.linesIntensity, currentLineIntensity);
 
