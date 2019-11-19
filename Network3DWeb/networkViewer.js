@@ -978,7 +978,7 @@ $().ready(function(){
 				 touchMinScale *= event.scale ;
 
 
-				cameraDistance+=(1-event.scale)*10;
+				cameraDistance+=(1-event.scale)*2;
 				if(cameraDistance<0.01){
 					cameraDistance=0.01;
 				}else if(cameraDistance>10){
