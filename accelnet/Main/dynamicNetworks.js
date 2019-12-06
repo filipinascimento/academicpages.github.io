@@ -12,6 +12,7 @@ async function startVisualization() {
 
 	let startIndex = 0;
 	let currentNetwork;
+	let currentIndex = startIndex;
 	let color = d3.scaleOrdinal(d3.schemeCategory10);
 	
 	
@@ -44,7 +45,7 @@ async function startVisualization() {
 	let sizePowerCoeff = 1.0;
 
 	let maxWidthSize = 6;
-	let minWidthSize = 1;
+	let minWidthSize = 1.25;
 	let widthPowerCoeff = 1.0;
 
 	let maxLineOpacity = 0.90;
@@ -188,7 +189,8 @@ async function startVisualization() {
 		.append("text")
 		.attr("text-anchor","end");
 
-	function setDrawNetwork(network) {
+	function setDrawNetwork(network,networkIndex) {
+		currentIndex = networkIndex;
 		currentNetwork = network;
 		let newNodes = [];
 		let nodesDictionary = {};
@@ -304,21 +306,38 @@ async function startVisualization() {
 
 
 	function restart() {
-		color = d3.scaleOrdinal(d3.schemeCategory10);
-		let topColorProperties = sortByFrequency(nodes.map(d=>d[colorProperty])).slice(0, 10);
-		let propertyToColor = {};
-		topColorProperties.forEach(d=> propertyToColor[d] = color(d));
-		nodes.forEach(d => {
-			if (propertyToColor.hasOwnProperty(d[colorProperty])) {
-				d.color = propertyToColor[d[colorProperty]];
-			} else {
-				if (useDarkBackground) {
-					d.color = "#333333";
+		if(timelines){
+			nodes.forEach(d => {
+				let communityInTime = d[colorProperty]+"_"+currentIndex;
+				d.color = color(timelines[communityInTime]);
+				d.timeline = timelines[communityInTime];
+				// if (propertyToColor.hasOwnProperty(d[colorProperty])) {
+				// 	d.color = propertyToColor[d[colorProperty]];
+				// } else {
+				// 	if (useDarkBackground) {
+				// 		d.color = "#333333";
+				// 	} else {
+				// 		d.color = "#cccccc";
+				// 	}
+				// }
+			});
+		}else{
+			color = d3.scaleOrdinal(d3.schemeCategory10);
+			let topColorProperties = sortByFrequency(nodes.map(d=>d[colorProperty])).slice(0, 10);
+			let propertyToColor = {};
+			topColorProperties.forEach(d=> propertyToColor[d] = color(d));
+			nodes.forEach(d => {
+				if (propertyToColor.hasOwnProperty(d[colorProperty])) {
+					d.color = propertyToColor[d[colorProperty]];
 				} else {
-					d.color = "#cccccc";
+					if (useDarkBackground) {
+						d.color = "#333333";
+					} else {
+						d.color = "#cccccc";
+					}
 				}
-			}
-		});
+			});
+		}
 
 		let nodesSizes = [];
 		nodes.forEach(d => {
@@ -809,6 +828,7 @@ async function startVisualization() {
 	//Loading Networks
 	let networks = [];
 	let timeIndices = [];
+	let timelines = extraDataset["timelines"];
 	
 	startYear = 2009;
 	endYear = 2018;
@@ -832,11 +852,12 @@ async function startVisualization() {
 		timeIndices.push([0, year]);
 	}
 
-	setDrawNetwork(networks[startIndex]);
+
+	setDrawNetwork(networks[startIndex],startIndex);
 	window.setNetwork = (i) => {
 		let network = networks[i];
 		if (network) {
-			setDrawNetwork(network);
+			setDrawNetwork(network,i);
 			restart();
 		}
 	}
