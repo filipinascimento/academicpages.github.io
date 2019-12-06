@@ -15,7 +15,8 @@ async function startVisualization() {
 	let color = d3.scaleOrdinal(d3.schemeCategory10);
 	
 	
-	let displayProperty = "name";
+	let displayProperties = ["name"];
+	
 	let sizeProperty = "betweenness";
 	let IDProperty = "ID";
 	let colorProperty = "community";
@@ -25,6 +26,7 @@ async function startVisualization() {
 	let networkName;
 
 	let selectedNodes = new Set();
+	let hoverNode = null;
 	let useDarkBackground = false;
 	let renderLinksSVG = false;
 	let renderLinksCanvas = true;
@@ -374,17 +376,32 @@ async function startVisualization() {
 			.attr("fill", d => d.color)
 			.attr("r", d => d.size)
 			.on("mouseover", function(d){
+				hoverNode=d;
+
 				d3.select(this).attr("r",d.size*1.25)
 				.attr("stroke", d3.rgb(d.color).darker(1))
 				.attr("stroke-width", 3);
 				hoverText.attr("fill", d.color)
-				.text(`${displayProperty=="name"?d.name:d[displayProperty]}`);
+				displayProperties.forEach((displayProperty,i)=>{
+				// .text(`${displayProperty=="name"?d.name:d[displayProperty]}\n${d[displayProperty]}`);
+
+				hoverText.append("tspan")
+				.attr("dy","1.2em")
+				.attr("x","0")
+				.style("font-size",i==0?"15px":"13px")
+					.text(`${displayProperty=="name"?d.name:d[displayProperty]}`);
+				});
+				updateSelectedNodes();
+				d3.event.stopPropagation();
 			})
 			.on("mouseout", function(d){
 				d3.select(this).attr("r",d=>d.size)
 				.attr("stroke", d => d3.rgb(d.color).darker(0.5))
 				.attr("stroke-width", 1.0);
-				hoverText.text(null);
+				hoverText.text(null).select("tspan").remove();
+				hoverNode=null;
+				updateSelectedNodes();
+				d3.event.stopPropagation();
 			})
 			.on("click", function(d){
 				if(!d3.event.shiftKey){
@@ -457,9 +474,14 @@ async function startVisualization() {
 	function updateSelectedNodes(justUpdate=false) {
 		let verticalOffset = -10;
 		if(!justUpdate){
-			console.log("updating...");
-			console.log(Array.from(selectedNodes).map(d=>nodeByID[d]));
-			selectedView = selectedView.data(Array.from(selectedNodes).map(d=>nodeByID[d]).filter(d=>d));
+			// console.log("updating...");
+			// console.log(Array.from(selectedNodes).map(d=>nodeByID[d]))
+			let selectedNodesArray = Array.from(selectedNodes).map(d=>nodeByID[d]).filter(d=>d)
+			
+			if(hoverNode && !selectedNodes.has(hoverNode.id)){
+				selectedNodesArray.push(hoverNode);
+			}
+			selectedView = selectedView.data(selectedNodesArray);
 			selectedView.exit().remove();
 			let selectedViewNew = selectedView.enter()
 					.append("g")
@@ -483,16 +505,16 @@ async function startVisualization() {
 			.attr("fill", d => d3.rgb(d.color).darker(1))
 			.attr("font-size","19px")
 			.attr("text-anchor","middle")
-			.text(d => `${displayProperty=="name"?d.name:d[displayProperty]}`);
+			.text(d => `${displayProperties[0]=="name"?d.name:d[displayProperties[0]]}`);
 
 		selectedView.select(".outline")
 		.attr("fill", "white")
 		.attr("stroke", "white")
-		.attr("stroke-width", 4)
+		.attr("stroke-width", 6)
 		.attr("font-size","19px")
 		.attr("text-anchor","middle")
 		.style('opacity', 0.9)
-		.text(d => `${displayProperty=="name"?d.name:d[displayProperty]}`);
+		.text(d => `${displayProperties[0]=="name"?d.name:d[displayProperties[0]]}`);
 
 		selectedView.select("path")
 			.attr("fill", d => d3.rgb(d.color).darker(1))
@@ -790,7 +812,7 @@ async function startVisualization() {
 	
 	startYear = 2009;
 	endYear = 2018;
-	displayProperty = "name";
+	displayProperties = ["name","affiliation"];
 	IDProperty = "ID";
 	colorProperty = "community";
 
