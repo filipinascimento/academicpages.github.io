@@ -201,7 +201,7 @@ var vertexShape;
 var mouseDown  = false;
 var lastMouseX = null;
 var lastMouseY = null;
-var cameraDistance = 6;
+var cameraDistance = 8;
 var redrawingFromMouseWheelEvent = false;
 var rotationMatrix = mat4.create();
 var animate = false;
@@ -210,7 +210,7 @@ var translatePosition = [0,0,0];
 
 /* GUI variables */
 
-var linesIntensity = intensityTransfFunction(80); 		// Global intensity of edges
+var linesIntensity = intensityTransfFunction(255); 		// Global intensity of edges
 var verticesIntensity = intensityTransfFunction(80);	// Global intensity of vertices when non opaque is enabled
 var verticesScale = 1.0;
 var linesWidth = 1.0;								// Global vertices scale factor
@@ -220,10 +220,10 @@ var showEdges = true;
 var showVertices = true;
 var opaqueVertices = true;	// Vertices are rendered as solids.
 var useEdgesDepth = false;	// Enables the use of EdgesDepth (NOTE: edges are not sorted when depth is enabled. Visual artefacts may occurs.)
-var useDarkBackground = true;
+var useDarkBackground = false;
 var usePerspective = true;
 var fastEdges = false;
-var fastVertices = false;
+var fastVertices = true;
 
 // Geometry mutators by properties default keys.
 var currentEdgesColorKey = "degree";
@@ -500,7 +500,7 @@ function initCanvas(){
 									["vertex","normal"]);
 									
 	//assigning the default vertex geometry as a sphere.
-	var sphereQuality=15
+	var sphereQuality=5
 	vertexShape = makeSphere(gl, 1.0, sphereQuality, sphereQuality);
 	//vertexShape = makeBox(gl);
 	
@@ -1035,7 +1035,13 @@ $().ready(function(){
 		
 			$(networkCanvas2D).mousewheel(function(event, delta, deltaX, deltaY) {
 				//console.log(delta, deltaX, deltaY);
-				
+				clearTimeout($.data(this, 'timer'));
+				$.data(this, 'timer', setTimeout(function() {
+					if(!animate){
+						redraw();
+					}
+				}, 250));
+			
 				cameraDistance+=delta;
 				if(cameraDistance<0.01){
 					cameraDistance=0.01;
@@ -1104,7 +1110,7 @@ $().ready(function(){
 		max: 255,
 		min: 0,
 		step: 1,
-		value: 80,
+		value: 255,
 		slide:intensityChange,
 		change:intensityChange
 	});
@@ -1124,7 +1130,7 @@ $().ready(function(){
 		max: 255,
 		min: 0,
 		step: 1,
-		value: 80,
+		value: 255,
 		slide:vertexIntensityChange,
 		change:vertexIntensityChange
 	});
@@ -1144,7 +1150,7 @@ $().ready(function(){
 		max: 1,
 		min: -1,
 		step: 0.1,
-		value: 0.0,
+		value: -0.2,
 		slide:scaleChange,
 		change:scaleChange
 	});
@@ -1203,6 +1209,14 @@ $().ready(function(){
 			 $("#propertiesPanel").css('backgroundColor','#FFFFFF').css('color','#000000');
 		}
 	});
+	
+	if(useDarkBackground){
+		$("#useDarkBackgroundCheck").prop('checked', true);
+		$("#propertiesPanel").css('backgroundColor','#000000').css('color','#FFFFFF');
+	}else{
+		$("#useDarkBackgroundCheck").prop('checked', false);
+		$("#propertiesPanel").css('backgroundColor','#FFFFFF').css('color','#000000');
+	}
 	
 	$("#edgesColorsProperty").selectable({
 		stop: function() {
