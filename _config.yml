@@ -296,13 +296,12 @@ tag_archive:
 #     category: /categories/:name/
 #     tag: /tags/:name/
 
+permalink: /bones/
 permalink: /visualizer/
 permalink: /visualizer/Networks/
 permalink: /Network3DWeb/
 permalink: /politiciannetworks/
 permalink: /accelnet/
-permalink: /bonesnetworks/
-
 
 # HTML Compression
 # - http://jch.penibelst.de/
