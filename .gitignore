@@ -2,3 +2,4 @@ _site/
 
 .DS_Store
 visualizer/.DS_Store
+Gemfile.lock
