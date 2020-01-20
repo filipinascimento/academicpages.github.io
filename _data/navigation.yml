@@ -15,12 +15,12 @@ main:
   # - title: "Blog Posts"
   #   url: /year-archive/
   #
-  
+
   - title: "Software & Viz"
     url: /software/
 
   - title: "CV"
-    url: /cv/
+    url: /cv-new/
 
   #
   # - title: "Guide"
