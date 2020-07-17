@@ -22,7 +22,12 @@ async function startVisualization() {
 		"psb": "PSB",
 		"ptb": "PTB",
 		"pl": "PL",
-		// "pdt": "PDT"
+		"novo": "NOVO",
+		"psd": "PSD",
+		"pdt": "PDT",
+		"psol": "PSOL",
+		"prb": "PRB",
+		"psl": "PSL"
 	};
 	let partiesToColors = {};
 	let showParties = true;
@@ -38,6 +43,16 @@ async function startVisualization() {
 	let zoomScale = 0.9;
 	let scaleFactor = 0.0;
 	let targetScaleFactor = 1.0;
+	
+	let dataAspectRatio = 0.0;
+	let targetDataAspectRatio = 1.0;
+
+	let dataHeight = 0.0;
+	let targetDataHeight = 1.0;
+
+	let dataWidth = 0.0;
+	let targetDataWidth = 1.0;
+
 	let linesIntensity = 0.2;
 	let linesWidth = 2.0;
 	let maxNodeSize = 4;
@@ -137,8 +152,10 @@ async function startVisualization() {
 	let forceLinks = 
 			d3.forceLink(links)
 				.id(d => d.id);
-	forceLinks.strength(d=>3*d.weight/Math.min(d.target.neigh.length, d.source.neigh.length))
-				
+				forceLinks.strength(d=>(0.25+3*d.weight)/Math.min(d.target.neigh.length, d.source.neigh.length));
+				// forceLinks.strength(d=>0.25*(1+3*d.weight)/Math.min(d.target.neigh.length, d.source.neigh.length));
+				// forceLinks.strength(d=>(1+2*d.weight)/Math.min(d.target.neigh.length, d.source.neigh.length));
+	
 	var simulation = d3.forceSimulation(nodes)
 		.force("charge", d3.forceManyBody()
 			.strength(d=> -((1-d.sizeFactor)*minStrength+(d.sizeFactor)*maxStrength))
@@ -150,7 +167,7 @@ async function startVisualization() {
 		.force("link",
 		forceLinks
 		)
-		.force("center", d3.forceCenter(0, 0))
+		// .force("center", d3.forceCenter(0, 0))
 		.force("x", d3.forceX().strength(0.04))
 		.force("y", d3.forceY().strength(0.04))
 		// .force('collision', d3.forceCollide().radius(d=> d.size*2))
@@ -366,7 +383,9 @@ async function startVisualization() {
 		simulation.nodes(nodes);
 		simulation.force("link").links(links);
 		simulation
-			.alpha(1.0)
+			.alphaDecay(0.005)
+			.alpha(0.8)
+			.velocityDecay(0.1)
 			.restart();
 
 		updateLegend();
@@ -586,12 +605,38 @@ async function startVisualization() {
 		let xcenter = d3.mean(nodes, d => d.x);
 		let ycenter = d3.mean(nodes, d => d.y);
 
-		let dataWidth = 2 * d3.max([xcenter - xextent[0], xextent[1] - xcenter]);
-		let dataHeight = 2 * d3.max([ycenter - yextent[0], yextent[1] - ycenter]);
+		targetDataWidth = 2 * d3.max([xcenter - xextent[0], xextent[1] - xcenter]);
+		targetDataHeight = 2 * d3.max([ycenter - yextent[0], yextent[1] - ycenter]);
 
+
+		// dataWidth = linearInterpolate(dataWidth,targetDataWidth)
+		// dataHeight = linearInterpolate(dataHeight,targetDataHeight)
+		dataWidth = targetDataWidth;
+		dataHeight = targetDataHeight;
+		if(Math.abs(dataWidth-targetDataWidth)>0.005){
+			needsUpdate=true;
+		}
+
+		if(Math.abs(dataHeight-targetDataHeight)>0.005){
+			needsUpdate=true;
+		}
 
 		let panelAspectRatio = width / height;
-		let dataAspectRatio = dataWidth / dataHeight;
+		targetDataAspectRatio = dataWidth / dataHeight;
+
+		// let gamma1 = 0.05
+		// if (dataAspectRatio > 0) {
+		// 	dataAspectRatio = dataAspectRatio * (1 - gamma1) + targetDataAspectRatio * gamma1;
+		// } else {
+		// 	dataAspectRatio = targetDataAspectRatio;
+		// }
+		dataAspectRatio = linearInterpolate(dataAspectRatio,targetDataAspectRatio)
+		dataAspectRatio = targetDataAspectRatio;
+		if(Math.abs(dataAspectRatio-targetDataAspectRatio)>0.005){
+			needsUpdate=true;
+		}
+		
+		dataAspectRatio = targetDataAspectRatio
 
 		if (dataWidth > 0 && dataHeight > 0) {
 			if (dataAspectRatio > panelAspectRatio) {
@@ -602,13 +647,14 @@ async function startVisualization() {
 		}
 
 
-		let gamma = 0.05
-		if (scaleFactor > 0) {
-			scaleFactor = scaleFactor * (1 - gamma) + targetScaleFactor * gamma;
-		} else {
-			scaleFactor = targetScaleFactor;
-		}
-
+		// let gamma2 = 0.05
+		// if (scaleFactor > 0) {
+		// 	scaleFactor = scaleFactor * (1 - gamma2) + targetScaleFactor * gamma2;
+		// } else {
+		// 	scaleFactor = targetScaleFactor;
+		// }
+		scaleFactor = linearInterpolate(scaleFactor,targetScaleFactor)
+		// scaleFactor = targetScaleFactor;
 		if(Math.abs(scaleFactor-targetScaleFactor)>0.005){
 			needsUpdate=true;
 		}
@@ -736,7 +782,8 @@ async function startVisualization() {
 
 	topTopParties = sortByFrequency(topParties).slice(0, 20);
 	console.log(topTopParties);
-	let partyColorFunction = d3.scaleOrdinal(d3.schemeCategory10);
+	let colorCategories = d3.schemeCategory10.slice(0,-1).concat(d3.schemePastel2)
+	let partyColorFunction = d3.scaleOrdinal(colorCategories);
 
 	for (const party in partiesNames) {
 		if (partiesNames.hasOwnProperty(party)) {
@@ -815,6 +862,17 @@ async function startVisualization() {
 
 
 	myRequestAnimationFrame(zoomAnimation);
+
+	var count = 5;
+	function ticktimer(){
+		d3.select("#timeSlider").property("value",count);
+		window.setNetwork(count)
+		count++;
+		setTimeout(function(){ ticktimer() }, 30000);
+	}
+	// ticktimer();
+
 }
 
 startVisualization();
+

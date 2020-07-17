@@ -10,4 +10,4 @@ redirect_from:
 {% include base_path %}
 
 
-[Download my CV](http://filipinascimento.github.io/files/Filipi_CV_2018.pdf) (PDF)
+[Download my CV](http://filipinascimento.github.io/files/Filipi_CV_2020.pdf) (PDF)

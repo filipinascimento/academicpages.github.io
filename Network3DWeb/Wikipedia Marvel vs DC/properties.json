@@ -5,5 +5,6 @@
 	"Main_Category" : "Main Category",
 	"Neigh_Category" : "Neigh Category",
 	"Node_InDegree" : "Node InDegree",
-	"ORDER" : ["degree", "Filtered_Main_Category", "Filtered_Neigh_Category", "Main_Category", "Neigh_Category", "Node_InDegree"]
+	"ids" : "ids",
+	"ORDER" : ["degree", "Filtered_Main_Category", "Filtered_Neigh_Category", "Main_Category","ids", "Neigh_Category", "Node_InDegree"]
 }

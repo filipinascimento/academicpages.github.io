@@ -2,7 +2,7 @@
 title: "Identifying the borders of mathematical knowledge"
 collection: publications
 permalink: /publication/2010-silva2010identifying
-authors: "F. N. Silva, B. A. N. Traven{ç}olo, M. P. Viana, L. da F. Costa"
+authors: "F. N. Silva, B. A. N. Travençolo, M. P. Viana, L. da F. Costa"
 date: 2010-01-01
 venue: 'Journal of Physics A: Mathematical and Theoretical, v. 43, n. 32, p. 325202'
 bibtex: "silva2010identifying.bib"

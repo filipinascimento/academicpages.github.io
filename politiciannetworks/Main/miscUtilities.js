@@ -88,4 +88,11 @@ function sortByFrequency(array) {
 	});
 }
 
-
+function linearInterpolate(value,targetValue,gamma=0.05){
+	if (value > 0) {
+		value = value * (1 - gamma) + targetValue * gamma;
+	} else {
+		value = targetValue;
+	}
+	return value;
+}
