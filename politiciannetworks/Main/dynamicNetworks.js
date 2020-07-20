@@ -383,9 +383,9 @@ async function startVisualization() {
 		simulation.nodes(nodes);
 		simulation.force("link").links(links);
 		simulation
-			.alphaDecay(0.005)
+			.alphaDecay(0.01)
 			.alpha(0.8)
-			.velocityDecay(0.1)
+			.velocityDecay(0.5)
 			.restart();
 
 		updateLegend();
