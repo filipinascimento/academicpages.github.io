@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Geomap Example</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    html,
+    body {
+      position: fixed;
+      height: 100%;
+      width: 100%;
+      margin: 0px;
+      overflow: hidden;
+      background-color: #dddddd;
+    }
+
+    text {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    .mapView {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      pointer-events: none;
+    }
+
+    .nodesView {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      bottom: 0;
+    }
+
+    .edgesView {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      bottom: 0;
+      pointer-events: none;
+      
+    }
+
+    #netviz {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      bottom: 75px;
+    }
+
+    #buttonsPanel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 75px;
+
+      background-color: #fef0d9;
+      border-top: 1px solid #fdd49e;
+      /* display: flex;
+      align-items: center;
+      justify-content: flex-start; */
+    }
+
+
+
+    #inputPanel {
+      /* display: flex;
+      flex: 1 1;
+      margin: 0px;
+      flex-direction: column; */
+    }
+
+    #timeSlider {
+      font-family: "Helvetica Neue", Helvetica, "Arial", sans-serif;
+      margin-left: 20px;
+      margin-right: 20px;
+      margin-top: 12.5px;
+      /* flex: 1 1 30px; */
+      /* height: 52px; */
+      overflow: visible;
+    }
+
+
+
+
+    *:focus {
+      outline: none;
+    }
+
+    * {
+      -webkit-touch-callout: none;
+      /* iOS Safari */
+      -webkit-user-select: none;
+      /* Safari */
+      -khtml-user-select: none;
+      /* Konqueror HTML */
+      -moz-user-select: none;
+      /* Old versions of Firefox */
+      -ms-user-select: none;
+      /* Internet Explorer/Edge */
+      user-select: none;
+      /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+
+    }
+    .loaderContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 15px;
+      padding-left:27px;
+      pointer-events: none;
+      color: #b30000;
+      font-family: "Helvetica Neue", Helvetica, "Arial", sans-serif;
+      font-weight: bold;
+      z-index:10;
+      
+    }
+
+    .loader {
+      position: absolute;
+      top: 0;
+      left: 0;
+      border: 5px solid #f3f3f3; /* Light grey */
+      border-top: 5px solid #b30000; /* Blue */
+      border-radius: 50%;
+      width: 12px;
+      height: 12px;
+      animation: spin 1s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    svg text {
+      font-family: "Helvetica Neue", Helvetica, "Arial", sans-serif;
+      font-weight: bold;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <script type="module" src="main.js" defer></script>
+  <div class="loaderContainer">
+    <div class="loader"></div>Processing edges...
+  </div>
+
+  <div id="netviz"></div>
+  <div id="buttonsPanel">
+    <div id="inputPanel">
+      <!-- <input type="range" id="timeSlider" min="0" value="0" max="100" step="1"> -->
+      <div id="timeSlider">
+      </div>
+      <!-- <button id="saveSVGButton">Save SVG</button> -->
+    </div>
+</body>
+
+</html>
