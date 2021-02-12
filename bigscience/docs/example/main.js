@@ -17,13 +17,13 @@ import d3GeoZoom from '../../web_modules/d3-geo-zoom.js';
 const d3 = Object.assign({}, d3_base, d3geo)
 
 let lut = name =>
-  d3
-    .text(
-      `https://raw.githubusercontent.com/1313e/CMasher/master/cmasher/colormaps/${name}/${name}_8bit.txt`
-    )
-    .then(d => d3.dsvFormat(" ").parseRows(d, d => d3.rgb(d[0], d[1], d[2])))
-    .then(l => t => l[Math.floor(t * (l.length - 1e-7))])
-		
+	d3
+		.text(
+			`https://raw.githubusercontent.com/1313e/CMasher/master/cmasher/colormaps/${name}/${name}_8bit.txt`
+		)
+		.then(d => d3.dsvFormat(" ").parseRows(d, d => d3.rgb(d[0], d[1], d[2])))
+		.then(l => t => l[Math.floor(t * (l.length - 1e-7))])
+
 
 const institutionColors = {
 	"research center": "#1f77b4",
@@ -36,19 +36,25 @@ export class HeliosMap {
 	constructor({
 		elementID,
 		projection = d3.geoRobinson()//geoCylindricalEqualArea()
-								//  .parallel(37.5)
-								// .center([0,40])
-								 .rotate([-10,0]),
+			//  .parallel(37.5)
+			// .center([0,40])
+			.rotate([-10, 0]),
 		// nodes = {},
 		// edges = [],
 	}) {
 		this.element = document.getElementById(elementID);
 		this.element.innerHTML = '';
 		this.element.classList.add('scaffold');
-		this.mapElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-		this.mapElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
-		this.mapElement.classList.add("mapView")
-		this.element.appendChild(this.mapElement);
+		// this.mapElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+		// this.mapElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+		// this.mapElement.classList.add("mapView")
+		// this.element.appendChild(this.mapElement);
+
+		// this.mapElement = document.createElement("canvas");
+		// this.element.appendChild(this.mapElement);
+		// this.mapElement.classList.add("mapView")
+		// this.mapContext = this.mapElement.getContext('2d');
+
 		this.canvasElement = document.createElement("canvas");
 		this.element.appendChild(this.canvasElement);
 		this.canvasElement.classList.add("edgesView")
@@ -57,15 +63,22 @@ export class HeliosMap {
 		this.nodesElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
 		this.nodesElement.classList.add("nodesView")
 		this.element.appendChild(this.nodesElement);
-
+		this.mapContext = this.context;
+		// this.legendsElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+		// this.legendsElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+		// this.legendsElement.classList.add("legendsView")
+		this.globalLinks = false;
 		this.projection = projection;
 		this.geoPath = d3.geoPath().projection(this.projection);
+		this.geoPathCanvas = d3.geoPath()
+			.projection(this.projection)
+			.context(this.mapContext);
 
-		
-		this.transform = new utils.RegularTransform({x:0,y:0,k:1.0});
+
+		this.transform = new utils.RegularTransform({ x: 0, y: 0, k: 1.0 });
 		this.zoom = d3.zoom()
-			.scaleExtent([1, 20])
-			.on('zoom', (event) =>{
+			.scaleExtent([1, 100])
+			.on('zoom', (event) => {
 				// console.log(event.transform);
 				this.transform = new utils.RegularTransform(event.transform);
 				this.updateProjection();
@@ -73,15 +86,15 @@ export class HeliosMap {
 				// .translate([event.transform.x,event.transform.y])
 				// .scale(event.transform.k);
 				this.update()
-		});
+			});
 
-		d3.select(this.mapElement).call(this.zoom);
+		d3.select(this.canvasElement).call(this.zoom);
 		d3.select(this.nodesElement).call(this.zoom);
 
-		
+
 		this.sliderElement = document.getElementById('timeSlider');
 
-		
+
 		// document.getElementById("timeSlider").addEventListener("change", (e)=>{
 		// 	console.log("macaco");
 		// 	console.log(e.values);
@@ -96,37 +109,40 @@ export class HeliosMap {
 	}
 
 	async initialize() {
-		this.colormap = await lut("dusk");
+		this.colormap = await lut("amber");
 		this.countryData = await d3.json("world-110m.geojson");
 		this.progressbar = d3.select(".loaderContainer");
-		this.backgroundMapGroup = d3.select(this.mapElement)
-			.append("g")
-			.classed("worldMap", true)
+		this.progresstext = d3.select(".loaderText");
+		this.progresstext.text("Loading data...");
 
-		this.backgroundBorder = this.backgroundMapGroup.selectAll(".sphere")
-			.data([{type: "Sphere"}]).enter().append("path")
-			.classed("sphere",true)
-			.style("fill", "#f9fcff")
-			.style("stroke", "#dddddd")
-			.style("stroke-width", 1);
+		// this.backgroundMapGroup = d3.select(this.mapElement)
+		// 	.append("g")
+		// 	.classed("worldMap", true)
 
-		this.backgroundMap = this.backgroundMapGroup.selectAll(".land")
-			.data(this.countryData.features)
-			.enter()
-			.append("path")
-			.classed("land",true)
-			.attr("fill", "#B1C3B6")
-			.attr("stroke", "#dddddd")
-			.attr("stroke-width", 1.0);
+		// this.backgroundBorder = this.backgroundMapGroup.selectAll(".sphere")
+		// 	.data([{type: "Sphere"}]).enter().append("path")
+		// 	.classed("sphere",true)
+		// 	.style("fill", "#f9fcff")
+		// 	.style("stroke", "#dddddd")
+		// 	.style("stroke-width", 1);
+
+		// this.backgroundMap = this.backgroundMapGroup.selectAll(".land")
+		// 	.data(this.countryData.features)
+		// 	.enter()
+		// 	.append("path")
+		// 	.classed("land",true)
+		// 	.attr("fill", "#B1C3B6")
+		// 	.attr("stroke", "#dddddd")
+		// 	.attr("stroke-width", 1.0);
 
 
 		this.linksPanel = d3.select(this.nodesElement)
 			.append("g")
 			.classed("links", true);
-		
-		
-		
-		this.nodesPanel= d3.select(this.nodesElement)
+
+
+
+		this.nodesPanel = d3.select(this.nodesElement)
 			.append("g")
 			.classed("nodes", true)
 
@@ -139,12 +155,11 @@ export class HeliosMap {
 		await this.setNetwork(network);
 		await this.setupNodesView();
 		await this.willResizeEvent(0);
-		this.timeSlider.on('update', async (values)=>{
+		this.timeSlider.on('update', async (values) => {
 			this.minYear = parseInt(values[0]);
 			this.maxYear = parseInt(values[1]);
 			await this.update();
 		});
-		await this.setupLinks();
 	}
 
 	async updateProjection() {
@@ -152,9 +167,9 @@ export class HeliosMap {
 		this.height = this.element.clientHeight;
 		// let rot = this.projection.rotate();
 		// this.projection.rotate([rot[0],0]);
-		this.projection.fitExtent([[5, 5], [this.width - 5, this.height - 5]], {type: "Sphere"})
+		this.projection.fitExtent([[5, 5], [this.width - 5, this.height - 5]], { type: "Sphere" })
 		let currentCenter = this.projection.translate();
-		this.projection.translate([this.transform.x+this.transform.k*currentCenter[0],this.transform.y+this.transform.k*currentCenter[1]])
+		this.projection.translate([this.transform.x + this.transform.k * currentCenter[0], this.transform.y + this.transform.k * currentCenter[1]])
 		this.projection.scale(this.projection.scale() * this.transform.k)
 
 		// let tx = Math.min(0, Math.max(this.transform.x, width - width * this.transform.k)),
@@ -168,21 +183,21 @@ export class HeliosMap {
 		this.linksPlotData = null;
 		let width = this.element.clientWidth;
 		let height = this.element.clientHeight;
-		
+
 		let dpr = window.devicePixelRatio || 1;
 		let bsr = this.context.webkitBackingStorePixelRatio ||
-						this.context.mozBackingStorePixelRatio ||
-						this.context.msBackingStorePixelRatio ||
-						this.context.oBackingStorePixelRatio ||
-						this.context.backingStorePixelRatio || 1;
+			this.context.mozBackingStorePixelRatio ||
+			this.context.msBackingStorePixelRatio ||
+			this.context.oBackingStorePixelRatio ||
+			this.context.backingStorePixelRatio || 1;
 		this.contextPixelRatio = dpr / bsr;
 
 		this.canvasElement.style.width = width + "px";
 		this.canvasElement.style.height = height + "px";
 		// this.svgElement.style.width = width+"px";
 		// this.svgElement.style.height = height+"px";
-		this.mapElement.setAttribute('height', "" + height);
-		this.mapElement.setAttribute('width', "" + width);
+		// this.mapElement.setAttribute('height', "" + height);
+		// this.mapElement.setAttribute('width', "" + width);
 		this.nodesElement.setAttribute('height', "" + height);
 		this.nodesElement.setAttribute('width', "" + width);
 		// this.svgElement.width = width+"px";
@@ -194,40 +209,73 @@ export class HeliosMap {
 		this.context.setTransform(1, 0, 0, 1, 0, 0);
 		this.context.scale(this.contextPixelRatio, this.contextPixelRatio);
 
+		this.previousGlobalLink = false;
+
+
 		this.updateProjection();
 		this.update()
 	}
 
 	async updateBackground() {
-		// d3.select(this.svgElement).style("background","red");
-		this.backgroundMap
-			.attr("d", this.geoPath);
-		this.backgroundBorder
-			.attr("d", this.geoPath)
+		// this.mapContext.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
+
+		// this.backgroundMap
+		// 	.attr("d", this.geoPath);
+		// this.backgroundBorder
+		// 	.attr("d", this.geoPath)
+
+		this.mapContext.save()
+		this.mapContext.strokeStyle = '#dddddd';
+		this.mapContext.fillStyle = '#f9fcff';
+		this.mapContext.beginPath();
+		this.geoPathCanvas({ type: "Sphere" })
+		this.mapContext.fill();
+		this.mapContext.stroke();
+
+		// this.context.lineWidth = 0.5;
+		this.mapContext.strokeStyle = '#dddddd';
+		this.mapContext.fillStyle = '#B1C3B6';
+		this.mapContext.beginPath();
+		this.geoPathCanvas(this.countryData)
+		this.mapContext.fill();
+		this.mapContext.stroke();
+
+
+
+		// 	.attr("fill", "#B1C3B6")
+		// 	.attr("stroke", "#dddddd"){type: "Sphere"}
+		// 	.style("fill", "#f9fcff")
+		// 	.style("stroke", "#dddddd")
+		this.mapContext.restore()
 	}
 
 	async update() {
-		this.progressbar.style("display",null);
-		this.yearsSet = new Set(Array.from({length: this.maxYear-this.minYear+1}, (x, yearIndex) => yearIndex+this.minYear));
-			
-		await this.updateBackground();
+		this.yearsSet = new Set(Array.from({ length: this.maxYear - this.minYear + 1 }, (x, yearIndex) => yearIndex + this.minYear));
+
 		await this.updateNodesPositions();
 		await this.updateNodesView();
 		await this.updateSelectedNodes(true);
-		
-		if(this.timer){
-			clearTimeout(this.timer);
-		};
-		
-		this.timer = setTimeout(async ()=>{
-			await this.setupLinks();
-			this.progressbar.style("display","none");
-		}, 1000);
 
-		requestAnimationFrame(()=>this.renderLinks());
+		this.context.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+		await this.updateBackground();
+		this.renderLinks();
+		if (!this.globalLinks || !this.previousGlobalLink) {
+			this.progressbar.style("display", null);
+			this.progresstext.text("Processing edges...");
+			if (this.timer) {
+				clearTimeout(this.timer);
+			};
+			this.timer = setTimeout(async () => {
+				this.previousGlobalLink = this.globalLinks;
+				await this.setupLinks();
+				this.progressbar.style("display", "none");
+			}, 1000);
+		}
+		// requestAnimationFrame(()=>this.renderLinks());
 	}
 
 	async setNetwork(network) {
+
 		this.network = network;
 		this.nodes = [];
 		this.minYear = null;
@@ -242,39 +290,39 @@ export class HeliosMap {
 				}
 			}
 
-			node.size = Math.pow(node["Strength"],0.5);
-			sizeMax = Math.max(sizeMax,node.size)
+			node.size = Math.pow(node["Strength"], 0.5);
+			sizeMax = Math.max(sizeMax, node.size)
 			node.id = nodeIndex;
-			
+
 			node.visible = true;
 			if (node.Name.startsWith("Unlisted")) {
 				node.unlisted = true;
 			} else {
 				node.unlisted = false;
 			}
-			
+
 			if (Object.hasOwnProperty.call(node, "years")) {
-				node["years"] = new Set(node["years"].split(" ").map(d=>parseInt(d)));
+				node["years"] = new Set(node["years"].split(" ").map(d => parseInt(d)));
 				for (const year of node["years"]) {
-					if(this.minYear==null){
+					if (this.minYear == null) {
 						this.minYear = year;
-					}else{
-						this.minYear = Math.min(this.minYear,year)
+					} else {
+						this.minYear = Math.min(this.minYear, year)
 					}
-					if(this.maxYear==null){
+					if (this.maxYear == null) {
 						this.maxYear = year;
-					}else{
-						this.maxYear = Math.max(this.maxYear,year)
+					} else {
+						this.maxYear = Math.max(this.maxYear, year)
 					}
 				}
 			}
-			
-			
-	
+
+
+
 			this.nodes.push(node);
 		}
 		this.nodes.forEach(node => {
-			node.size = node.size/sizeMax*8+2;
+			node.size = node.size / sizeMax * 8 + 2;
 			if (node.Field in institutionColors) {
 				node.color = institutionColors[node.Field];
 			} else {
@@ -282,28 +330,69 @@ export class HeliosMap {
 			}
 		});
 
-		
+
 		this.minRangeYear = this.minYear;
 		this.maxRangeYear = this.maxYear;
-		let intFormater = {to:d=>(""+Math.round(d))};
+
+		let intFormater = { to: d => ("" + Math.round(d)) };
 		this.timeSlider = noUiSlider.create(this.sliderElement, {
-				start: [this.minYear, this.maxYear],
-				step: 1,
-				behaviour: "tap-drag",
-				tooltips: [intFormater, intFormater],
-				connect: true,
-				range: {
-						'min': this.minYear,
-						'max': this.maxYear
-				},
-				pips: {
-					mode: 'steps',
-					density: 3,
-					format: intFormater
+			start: [this.minYear, this.maxYear],
+			step: 1,
+			behaviour: "tap-drag",
+			tooltips: [intFormater, intFormater],
+			connect: true,
+			range: {
+				'min': this.minYear,
+				'max': this.maxYear
+			},
+			pips: {
+				mode: 'steps',
+				density: 3,
+				format: intFormater
 			}
 		});
+
+		this.yearColor = d3.scaleSequential(this.colormap)
+			.domain([this.minRangeYear, this.minRangeYear + (this.maxRangeYear - this.minRangeYear)])
+
+
 		this.edgesYears = this.network.edgesProperties["years"]
-			.map(yearString=> new Set(yearString.split(" ").map(d=>parseInt(d))));
+			.map(yearString => new Set(yearString.split(" ").map(d => parseInt(d))));
+
+
+		// color,
+		// title,
+		// tickSize = 6,
+		// width = 320,
+		// height = 44 + tickSize,
+		// marginTop = 18,
+		// marginRight = 0,
+		// marginBottom = 16 + tickSize,
+		// marginLeft = 0,
+		// ticks = width / 64,
+		// tickFormat,
+		// tickValues
+
+		this.legendsElement = utils.legend({
+			color: d3.scaleSequential([this.minRangeYear, this.maxRangeYear], this.colormap),
+			title: "First year of collaboration",
+			tickFormat: "d",
+		})
+
+		this.legendsCategories = document.createElement("div");
+		utils.swatches({
+			color:institutionColors,
+			columns:null,
+			element:this.legendsCategories,
+			format: (d=>d.charAt(0).toUpperCase() + d.slice(1)),
+			});
+
+		this.legendsPanel = document.createElement("div");
+		this.legendsPanel.classList.add("legendsView");
+
+		this.legendsPanel.appendChild(this.legendsCategories);
+		this.legendsPanel.appendChild(this.legendsElement);
+		this.element.appendChild(this.legendsPanel);
 		
 	}
 
@@ -372,37 +461,37 @@ export class HeliosMap {
 		newNodeElements.transition()
 			.duration(500)
 			.attr("r", d => d.size);
-			
+
 		this.nodesView = newNodeElements
-		.merge(nodeElements);
+			.merge(nodeElements);
 	}
 
-	async updateNodesView(){
+	async updateNodesView() {
 		this.nodesView
-		.attr("cx", d => d.x)
-		.attr("cy", d => d.y)
-		.style("display", d=>d.visible?null:"none");
+			.attr("cx", d => d.x)
+			.attr("cy", d => d.y)
+			.style("display", d => d.visible ? null : "none");
 	}
 
-	async updateNodesPositions(){
-		this.nodes.forEach(node=>{
+	async updateNodesPositions() {
+		this.nodes.forEach(node => {
 			let projectedXY = this.projection(node.Position);
 			node.x = projectedXY[0];
 			node.y = projectedXY[1];
-			if(node.x<0 ||node.y<0||node.x>this.width ||node.y>this.height){
-				node.outOfBounds=true;
-			}else{
-				node.outOfBounds=false;
+			if (node.x < 0 || node.y < 0 || node.x > this.width || node.y > this.height) {
+				node.outOfBounds = true;
+			} else {
+				node.outOfBounds = false;
 			}
-			let interSet = utils.setIntersection(this.yearsSet,node["years"])
-			if(node.outOfBounds || node.unlisted || interSet.size==0){
-				node.visible=false;
-			}else{
-				node.visible=true;
+			let interSet = utils.setIntersection(this.yearsSet, node["years"])
+			if (node.outOfBounds || node.unlisted || interSet.size == 0) {
+				node.visible = false;
+			} else {
+				node.visible = true;
 			}
 		});
 	}
-	
+
 	async updateSelectedNodes(justUpdate = false) {
 		let verticalOffset = -10;
 		if (!justUpdate) {
@@ -456,75 +545,77 @@ export class HeliosMap {
 			.attr("stroke-width", 1)
 
 	}
-	
-	async setupLinks(){
+
+	async setupLinks() {
 		let minYears = this.network.edgesProperties["year"];
-		let pvalues = this.network.edgesProperties["alpha_ij"].map(d=>d);
-		// let pvalues = this.network.weights.map(d=>-d);
-		let weights = this.network.weights.map(d=>d);
-		
+		// let pvalues = this.network.edgesProperties["alpha_ij"].map(d=>d);
+		let pvalues = this.network.weights.map(d => 1.0 / d);
+
+		let weights = this.network.weights.map(d => d);
+
 		let edges = this.network.edges;
 		let nodes = this.nodes;
 
 		let edgesIndices = [];
 		let outgoing = [];
+
 		for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
 			let edge = edges[edgeIndex];
 			let fromIndex = edge[0];
 			let toIndex = edge[1];
-			if(!nodes[fromIndex].visible && !nodes[toIndex].visible){
+			if (!this.globalLinks && !nodes[fromIndex].visible && !nodes[toIndex].visible) {
 				continue;
 			}
-			let interSet = utils.setIntersection(this.yearsSet,this.edgesYears[edgeIndex])
-			if(interSet.size>0 ){
-				if(!nodes[fromIndex].visible || !nodes[toIndex].visible){
-					pvalues[edgeIndex]*=10;
+			let interSet = utils.setIntersection(this.yearsSet, this.edgesYears[edgeIndex])
+			if (interSet.size > 0) {
+				if (!this.globalLinks && (!nodes[fromIndex].visible || !nodes[toIndex].visible)) {
+					pvalues[edgeIndex] *= 4;
 				}
 				edgesIndices.push(edgeIndex);
 			}
 		}
-		edgesIndices.sort((firstIndex,secondIndex)=>pvalues[firstIndex]-pvalues[secondIndex])
-	  // edgesIndices.sort((firstIndex,secondIndex)=>-weights[firstIndex]+weights[secondIndex])
 
-		
-		if(edgesIndices.length==0){
+		edgesIndices.sort((firstIndex, secondIndex) => pvalues[firstIndex] - pvalues[secondIndex])
+		// edgesIndices.sort((firstIndex,secondIndex)=>-weights[firstIndex]+weights[secondIndex])
+
+
+		if (edgesIndices.length == 0) {
 			return;
 		}
 
-		edgesIndices = edgesIndices.slice(0,1000);
-		
-		let edgeBundlingData = [];
-		let yearColor = d3.scaleSequential(this.colormap)
-			.domain([this.minRangeYear, this.minRangeYear+(this.maxRangeYear-this.minRangeYear)/0.95])
+		edgesIndices = edgesIndices.slice(0, 1000);
 
-		let weightMinMax = d3.extent(edgesIndices.map(i=>weights[i]))
-	
+		let edgeBundlingData = [];
+
+		let weightMinMax = d3.extent(edgesIndices.map(i => weights[i]))
+
 		let weightMinMaxGlobal = d3.extent(weights)
-	
+
 		edgesIndices.forEach((index) => {
 			let edge = edges[index]
 			let fromIndex = edge[0];
 			let toIndex = edge[1];
 			let fromNode = nodes[fromIndex];
 			let toNode = nodes[toIndex];
-			let partialOpacity = !fromNode.visible || !toNode.visible;
-			
+			let partialOpacity = !this.globalLinks && (!fromNode.visible || !toNode.visible);
+
 			let weight = weights[index];
 			let minYear = minYears[index];
-			let c = d3.color(yearColor(minYear))
-			c.opacity=0.25*weight/weightMinMax[1]+0.15;
-			if(partialOpacity){
-				c.opacity=0.025;
+			let c = d3.color(this.yearColor(minYear))
+			c.opacity = 0.10 * weight / weightMinMaxGlobal[1] + 0.10 * weight / weightMinMax[1] + 0.05;
+			// c.opacity=1.0;
+			if (partialOpacity) {
+				c.opacity = 0.025;
 			}
 			let entry = {
 				id: `${fromIndex}:${toIndex}`,
 				name: `${fromIndex}:${toIndex}`,
-				data:{
-					weight:2+weight/weightMinMaxGlobal[1]*3,
-					color:c.formatRgb(),
+				data: {
+					weight: (2 + weight / weightMinMaxGlobal[1] * 2) * 1.0, //For quadratic use *0.25
+					color: c.formatRgb(),
 					edgeIndex: index,
 					// alpha:0.1,
-					coords:[
+					coords: [
 						nodes[fromIndex].x,
 						nodes[fromIndex].y,
 						nodes[toIndex].x,
@@ -537,168 +628,250 @@ export class HeliosMap {
 
 		let curviness = 1.0;
 		let margin = 0.0;
-		let type = 'BezierSAVE';
+		// let type = 'BezierSAVE';
+		let type = 'QuadraticSAVE';
 		let delta = 1.0;
-		let angleStrength = 4;
-		let neighbors = 10;
+		let angleStrength = 3;
+		let neighbors = 15;
 		let bundle = new Bundler();
+
+		bundle.options.angleStrength = angleStrength;
+		bundle.options.sort = null;
 
 		bundle.setNodes(edgeBundlingData);
 		bundle.buildNearestNeighborGraph(neighbors);
 		bundle.MINGLE();
 
-		// context.strokeStyle = 'rgba(0, 200, 200, 0.1)';
-		// context.lineWidth = 2;
-		
+		this.bundle = bundle;
 		this.linksPlotData = [];
-		let updateBundle = ()=>{
-			bundle.graph.each((node)=>{
-				let theEdges = node.unbundleEdges(delta);
-				Bundler.Graph['render' + type](this.linksPlotData, theEdges, {
-					margin: margin,
-					delta: delta,
-					angleStrength:angleStrength,
-					curviness: curviness,
-				});
-			})
-			this.linkTransform = new utils.RegularTransform({
-				x:this.transform.x,
-				y:this.transform.y,
-				k:this.transform.k
+		bundle.graph.each((node) => {
+			let theEdges = node.unbundleEdges(delta);
+			Bundler.Graph['render' + type](this.linksPlotData, theEdges, {
+				margin: margin,
+				delta: delta,
+				angleStrength: angleStrength,
+				curviness: curviness,
+				scale: 1.0,
 			});
-		}
+		})
+
+		this.linkTransform = new utils.RegularTransform({
+			x: this.transform.x,
+			y: this.transform.y,
+			k: this.transform.k
+		});
+
 		// const performAnimation = () => {
 		// 	this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
 		// 	request = requestAnimationFrame(performAnimation);
 		// 	updateBundle();
 		// }
 
-		updateBundle();
+		// updateBundle();
+		this.context.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+		this.updateBackground();
 		this.renderLinks();
-			// console.log(this.linksPlotData);
+
+		// console.log(this.linksPlotData);
 		// requestAnimationFrame(performAnimation);
 		// console.log(context.toString())
 		// this.linksView.setAttribute("d", context.toString());
 
 		//...
-		
+
 		// cancelAnimationFrame(request)
 
 	}
 
-	renderLinks(){
-		this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
-		
-		if(this.linksPlotData){
+	// renderLinks(){
+	// 	if(this.linksPlotData){
+	// 		this.context.save();
+	// 		let totalScale = 1.0;
+	// 		this.context.translate(this.transform.x, this.transform.y);
+	// 		this.context.scale(this.transform.k, this.transform.k);
+
+	// 		totalScale*=this.transform.k;
+
+	// 		if(this.linkTransform){
+	// 			let inverseTransform = this.linkTransform.inverse();
+	// 			this.context.translate(inverseTransform.x, inverseTransform.y);
+	// 			this.context.scale(inverseTransform.k, inverseTransform.k);
+	// 			totalScale*=inverseTransform.k;
+	// 		}
+
+	// 		this.linksPlotData.forEach(entry => {
+	// 			let edgeIndex = entry.edgeIndex;
+	// 			let interSet = utils.setIntersection(this.yearsSet,this.edgesYears[edgeIndex])
+	// 			if(interSet.size==0 ){
+	// 				return;
+	// 			}
+	// 			this.context.strokeStyle = entry.color;
+	// 			this.context.lineWidth = entry.width/totalScale;
+	// 			this.context.beginPath();
+	// 			if(entry.hasOwnProperty("moveTo")){
+	// 				let start = entry.moveTo;
+	// 				this.context.moveTo(start[0], start[1]);
+	// 			}
+	// 			if(entry.hasOwnProperty("bezierCurveTo1")){
+	// 				let [c1,c2,end] = entry.bezierCurveTo1;
+	// 				// this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// 			}
+	// 			if(entry.hasOwnProperty("lineTo")){
+	// 				let start = entry.lineTo;
+	// 				this.context.lineTo(start[0], start[1]);
+	// 			}
+	// 			if(entry.hasOwnProperty("bezierCurveTo2")){
+	// 				let [c1,c2,end] = entry.bezierCurveTo2;
+	// 				this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// 			}
+	// 			this.context.stroke();
+	// 			if(entry.shallClose){
+	// 				this.context.closePath();
+	// 			}
+	// 		});
+	// 		this.context.restore();
+	// 	}
+
+	// // ctx.moveTo(start[0], start[1]);
+	// // ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// // ctx.lineTo(start[0], start[1]);
+	// // ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// }
+
+	// renderLinksALT(){
+	// 	if(this.bundle){
+	// 		console.log("Drawing...")
+	// 		this.context.save();
+	// 		let totalScale = 1.0;
+	// 		this.context.translate(this.transform.x, this.transform.y);
+	// 		this.context.scale(this.transform.k, this.transform.k);
+
+	// 		totalScale*=this.transform.k;
+
+	// 		if(this.linkTransform){
+	// 			let inverseTransform = this.linkTransform.inverse();
+	// 			this.context.translate(inverseTransform.x, inverseTransform.y);
+	// 			this.context.scale(inverseTransform.k, inverseTransform.k);
+	// 			totalScale*=inverseTransform.k;
+	// 		}
+
+	// 		let curviness = 1.0;
+	// 		let margin = 0.0;
+	// 		// let type = 'BezierSAVE';
+	// 		let type = 'Bezier';
+	// 		let delta = 1.0;
+	// 		let angleStrength = 3;
+	// 		this.linksPlotData = [];
+	// 		this.bundle.graph.each((node)=>{
+	// 			let theEdges = node.unbundleEdges(delta);
+	// 			Bundler.Graph['render' + type](this.context, theEdges, {
+	// 				margin: margin,
+	// 				delta: delta,
+	// 				angleStrength:angleStrength,
+	// 				curviness: curviness,
+	// 				scale: 1.0,
+	// 			});
+	// 		});
+	// 		this.context.restore();
+	// 	}
+	// }
+	renderLinks() {
+		// this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
+
+		if (this.linksPlotData) {
 			this.context.save();
 			let totalScale = 1.0;
 			this.context.translate(this.transform.x, this.transform.y);
 			this.context.scale(this.transform.k, this.transform.k);
-			
-			totalScale*=this.transform.k;
 
-			if(this.linkTransform){
+			totalScale *= this.transform.k;
+
+			if (this.linkTransform) {
 				let inverseTransform = this.linkTransform.inverse();
 				this.context.translate(inverseTransform.x, inverseTransform.y);
 				this.context.scale(inverseTransform.k, inverseTransform.k);
-				totalScale*=inverseTransform.k;
+				totalScale *= inverseTransform.k;
 			}
-			
+
 			this.linksPlotData.forEach(entry => {
 				let edgeIndex = entry.edgeIndex;
-				let interSet = utils.setIntersection(this.yearsSet,this.edgesYears[edgeIndex])
-				if(interSet.size==0 ){
+				let interSet = utils.setIntersection(this.yearsSet, this.edgesYears[edgeIndex])
+				if (interSet.size == 0) {
 					return;
 				}
 				this.context.strokeStyle = entry.color;
-				this.context.lineWidth = entry.width/totalScale;
-				this.context.beginPath();
-				if(entry.hasOwnProperty("moveTo")){
-					let start = entry.moveTo;
-					this.context.moveTo(start[0], start[1]);
-				}
-				if(entry.hasOwnProperty("bezierCurveTo1")){
-					let [c1,c2,end] = entry.bezierCurveTo1;
-					this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
-				}
-				if(entry.hasOwnProperty("lineTo")){
-					let start = entry.lineTo;
-					this.context.lineTo(start[0], start[1]);
-				}
-				if(entry.hasOwnProperty("bezierCurveTo2")){
-					let [c1,c2,end] = entry.bezierCurveTo2;
-					this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
-				}
-				this.context.stroke();
-				this.context.closePath();
+				this.context.lineWidth = entry.width / totalScale;
+				this.context.stroke(entry.path);
 			});
 			this.context.restore();
 		}
 
-	// ctx.moveTo(start[0], start[1]);
-	// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
-	// ctx.lineTo(start[0], start[1]);
-	// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// ctx.moveTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// ctx.lineTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
 	}
 
-
-	renderLinksSVG(){
-	if(this.linkTransform){
-		let inverseTransform = this.linkTransform.inverse();
-		this.linksPanel.attr("transform",this.transform+" "+inverseTransform);
-	}else{
-		this.linksPanel.attr("transform",this.transform)
-	}
-	let linkElements = this.linksPanel.selectAll(".link")
-		.data(this.linksPlotData.filter(entry=>{
-			let edgeIndex = entry.edgeIndex;
-				let interSet = utils.setIntersection(this.yearsSet,this.edgesYears[edgeIndex])
-				if(interSet.size==0 ){
+	renderLinksSVG() {
+		if (this.linkTransform) {
+			let inverseTransform = this.linkTransform.inverse();
+			this.linksPanel.attr("transform", this.transform + " " + inverseTransform);
+		} else {
+			this.linksPanel.attr("transform", this.transform)
+		}
+		let linkElements = this.linksPanel.selectAll(".link")
+			.data(this.linksPlotData.filter(entry => {
+				let edgeIndex = entry.edgeIndex;
+				let interSet = utils.setIntersection(this.yearsSet, this.edgesYears[edgeIndex])
+				if (interSet.size == 0) {
 					return false;
-				}else{
+				} else {
 					return true;
 				}
 			}));
-		
-	linkElements.exit().remove();
 
-	let newLinkElements = linkElements
-		.enter()
-		.append("path")
-		.classed("link", true)
-		.attr("fill", "none")
-		.attr("vector-effect","non-scaling-stroke")
+		linkElements.exit().remove();
 
-	// newLinkElements.transition()
-	// 	.duration(500)
-	// 	.attr("r", d => d.size);
-		
-	this.linksView = newLinkElements
-		.merge(linkElements);
+		let newLinkElements = linkElements
+			.enter()
+			.append("path")
+			.classed("link", true)
+			.attr("fill", "none")
+			.attr("vector-effect", "non-scaling-stroke")
 
-	this.linksView
-		.attr("stroke", d => d.color)
-		.attr("stroke-width", d=>d.width+"px")
-		.attr("d",entry=>{
-			let context = d3.path();
-			if(entry.hasOwnProperty("moveTo")){
-				let start = entry.moveTo;
-				context.moveTo(start[0], start[1]);
-			}
-			if(entry.hasOwnProperty("bezierCurveTo1")){
-				let [c1,c2,end] = entry.bezierCurveTo1;
-				context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
-			}
-			if(entry.hasOwnProperty("lineTo")){
-				let start = entry.lineTo;
-				context.lineTo(start[0], start[1]);
-			}
-			if(entry.hasOwnProperty("bezierCurveTo2")){
-				let [c1,c2,end] = entry.bezierCurveTo2;
-				context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
-			}
-			return context;
-		});
+		// newLinkElements.transition()
+		// 	.duration(500)
+		// 	.attr("r", d => d.size);
+
+		this.linksView = newLinkElements
+			.merge(linkElements);
+
+		this.linksView
+			.attr("stroke", d => d.color)
+			.attr("stroke-width", d => d.width + "px")
+			.attr("d", entry => {
+				let context = d3.path();
+				if (entry.hasOwnProperty("moveTo")) {
+					let start = entry.moveTo;
+					context.moveTo(start[0], start[1]);
+				}
+				if (entry.hasOwnProperty("bezierCurveTo1")) {
+					let [c1, c2, end] = entry.bezierCurveTo1;
+					context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+				}
+				if (entry.hasOwnProperty("lineTo")) {
+					let start = entry.lineTo;
+					context.lineTo(start[0], start[1]);
+				}
+				if (entry.hasOwnProperty("bezierCurveTo2")) {
+					let [c1, c2, end] = entry.bezierCurveTo2;
+					context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+				}
+				// if(entry.shallClose){
+				// 	context.closePath();
+				// }
+				return context;
+			});
 
 		// this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
 		// if(this.linksPlotData){
@@ -733,10 +906,10 @@ export class HeliosMap {
 		// 	});
 		// }
 
-	// ctx.moveTo(start[0], start[1]);
-	// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
-	// ctx.lineTo(start[0], start[1]);
-	// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// ctx.moveTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// ctx.lineTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
 	}
 }
 

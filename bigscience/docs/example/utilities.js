@@ -1,10 +1,10 @@
-import * as d3_base from "../../web_modules/d3.js"
+import * as d3 from "../../web_modules/d3.js"
 
 function legend({
   color,
   title,
   tickSize = 6,
-  width = 320, 
+  width = 320,
   height = 44 + tickSize,
   marginTop = 18,
   marginRight = 0,
@@ -16,11 +16,11 @@ function legend({
 } = {}) {
 
   const svg = d3.create("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", [0, 0, width, height])
-      .style("overflow", "visible")
-      .style("display", "block");
+    .attr("width", width)
+    .attr("height", height)
+    .attr("viewBox", [0, 0, width, height])
+    .style("overflow", "visible")
+    .style("display", "block");
 
   let tickAdjust = g => g.selectAll(".tick line").attr("y1", marginTop + marginBottom - height);
   let x;
@@ -32,27 +32,27 @@ function legend({
     x = color.copy().rangeRound(d3.quantize(d3.interpolate(marginLeft, width - marginRight), n));
 
     svg.append("image")
-        .attr("x", marginLeft)
-        .attr("y", marginTop)
-        .attr("width", width - marginLeft - marginRight)
-        .attr("height", height - marginTop - marginBottom)
-        .attr("preserveAspectRatio", "none")
-        .attr("xlink:href", ramp(color.copy().domain(d3.quantize(d3.interpolate(0, 1), n))).toDataURL());
+      .attr("x", marginLeft)
+      .attr("y", marginTop)
+      .attr("width", width - marginLeft - marginRight)
+      .attr("height", height - marginTop - marginBottom)
+      .attr("preserveAspectRatio", "none")
+      .attr("xlink:href", ramp(color.copy().domain(d3.quantize(d3.interpolate(0, 1), n))).toDataURL());
   }
 
   // Sequential
   else if (color.interpolator) {
     x = Object.assign(color.copy()
-        .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
-        {range() { return [marginLeft, width - marginRight]; }});
+      .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
+      { range() { return [marginLeft, width - marginRight]; } });
 
     svg.append("image")
-        .attr("x", marginLeft)
-        .attr("y", marginTop)
-        .attr("width", width - marginLeft - marginRight)
-        .attr("height", height - marginTop - marginBottom)
-        .attr("preserveAspectRatio", "none")
-        .attr("xlink:href", ramp(color.interpolator()).toDataURL());
+      .attr("x", marginLeft)
+      .attr("y", marginTop)
+      .attr("width", width - marginLeft - marginRight)
+      .attr("height", height - marginTop - marginBottom)
+      .attr("preserveAspectRatio", "none")
+      .attr("xlink:href", ramp(color.interpolator()).toDataURL());
 
     // scaleSequentialQuantile doesn’t implement ticks or tickFormat.
     if (!x.ticks) {
@@ -69,28 +69,28 @@ function legend({
   // Threshold
   else if (color.invertExtent) {
     const thresholds
-        = color.thresholds ? color.thresholds() // scaleQuantize
+      = color.thresholds ? color.thresholds() // scaleQuantize
         : color.quantiles ? color.quantiles() // scaleQuantile
-        : color.domain(); // scaleThreshold
+          : color.domain(); // scaleThreshold
 
     const thresholdFormat
-        = tickFormat === undefined ? d => d
+      = tickFormat === undefined ? d => d
         : typeof tickFormat === "string" ? d3.format(tickFormat)
-        : tickFormat;
+          : tickFormat;
 
     x = d3.scaleLinear()
-        .domain([-1, color.range().length - 1])
-        .rangeRound([marginLeft, width - marginRight]);
+      .domain([-1, color.range().length - 1])
+      .rangeRound([marginLeft, width - marginRight]);
 
     svg.append("g")
       .selectAll("rect")
       .data(color.range())
       .join("rect")
-        .attr("x", (d, i) => x(i - 1))
-        .attr("y", marginTop)
-        .attr("width", (d, i) => x(i) - x(i - 1))
-        .attr("height", height - marginTop - marginBottom)
-        .attr("fill", d => d);
+      .attr("x", (d, i) => x(i - 1))
+      .attr("y", marginTop)
+      .attr("width", (d, i) => x(i) - x(i - 1))
+      .attr("height", height - marginTop - marginBottom)
+      .attr("fill", d => d);
 
     tickValues = d3.range(thresholds.length);
     tickFormat = i => thresholdFormat(thresholds[i], i);
@@ -99,48 +99,48 @@ function legend({
   // Ordinal
   else {
     x = d3.scaleBand()
-        .domain(color.domain())
-        .rangeRound([marginLeft, width - marginRight]);
+      .domain(color.domain())
+      .rangeRound([marginLeft, width - marginRight]);
 
     svg.append("g")
       .selectAll("rect")
       .data(color.domain())
       .join("rect")
-        .attr("x", x)
-        .attr("y", marginTop)
-        .attr("width", Math.max(0, x.bandwidth() - 1))
-        .attr("height", height - marginTop - marginBottom)
-        .attr("fill", color);
+      .attr("x", x)
+      .attr("y", marginTop)
+      .attr("width", Math.max(0, x.bandwidth() - 1))
+      .attr("height", height - marginTop - marginBottom)
+      .attr("fill", color);
 
-    tickAdjust = () => {};
+    tickAdjust = () => { };
   }
 
   svg.append("g")
-      .attr("transform", `translate(0,${height - marginBottom})`)
-      .call(d3.axisBottom(x)
-        .ticks(ticks, typeof tickFormat === "string" ? tickFormat : undefined)
-        .tickFormat(typeof tickFormat === "function" ? tickFormat : undefined)
-        .tickSize(tickSize)
-        .tickValues(tickValues))
-      .call(tickAdjust)
-      .call(g => g.select(".domain").remove())
-      .call(g => g.append("text")
-        .attr("x", marginLeft)
-        .attr("y", marginTop + marginBottom - height - 6)
-        .attr("fill", "currentColor")
-        .attr("text-anchor", "start")
-        .attr("font-weight", "bold")
-        .attr("class", "title")
-        .text(title));
+    .attr("transform", `translate(0,${height - marginBottom})`)
+    .call(d3.axisBottom(x)
+      .ticks(ticks, typeof tickFormat === "string" ? tickFormat : undefined)
+      .tickFormat(typeof tickFormat === "function" ? tickFormat : undefined)
+      .tickSize(tickSize)
+      .tickValues(tickValues))
+    .call(tickAdjust)
+    .call(g => g.select(".domain").remove())
+    .call(g => g.append("text")
+      .attr("x", marginLeft)
+      .attr("y", marginTop + marginBottom - height - 6)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "start")
+      .attr("font-weight", "bold")
+      .attr("class", "title")
+      .text(title));
 
   return svg.node();
 }
 
 function setIsSuperset(set, subset) {
   for (let elem of subset) {
-      if (!set.has(elem)) {
-          return false
-      }
+    if (!set.has(elem)) {
+      return false
+    }
   }
   return true
 }
@@ -148,7 +148,7 @@ function setIsSuperset(set, subset) {
 function setUnion(setA, setB) {
   let _union = new Set(setA)
   for (let elem of setB) {
-      _union.add(elem)
+    _union.add(elem)
   }
   return _union
 }
@@ -156,9 +156,9 @@ function setUnion(setA, setB) {
 function setIntersection(setA, setB) {
   let _intersection = new Set()
   for (let elem of setB) {
-      if (setA.has(elem)) {
-          _intersection.add(elem)
-      }
+    if (setA.has(elem)) {
+      _intersection.add(elem)
+    }
   }
   return _intersection
 }
@@ -167,11 +167,11 @@ function setIntersection(setA, setB) {
 function setSymmetricDifference(setA, setB) {
   let _difference = new Set(setA)
   for (let elem of setB) {
-      if (_difference.has(elem)) {
-          _difference.delete(elem)
-      } else {
-          _difference.add(elem)
-      }
+    if (_difference.has(elem)) {
+      _difference.delete(elem)
+    } else {
+      _difference.add(elem)
+    }
   }
   return _difference
 }
@@ -179,71 +179,37 @@ function setSymmetricDifference(setA, setB) {
 function setDifference(setA, setB) {
   let _difference = new Set(setA)
   for (let elem of setB) {
-      _difference.delete(elem)
+    _difference.delete(elem)
   }
   return _difference
 }
 
-class RegularTransform{
-  constructor({x=0,y=0,k=1.0}){
+class RegularTransform {
+  constructor({ x = 0, y = 0, k = 1.0 }) {
     this.x = x;
     this.y = y;
     this.k = k;
   }
-  toString(){
+  toString() {
     return "translate(" + this.x + "," + this.y + ") scale(" + this.k + ")";
   }
-  inverse(){
-    return new RegularTransform({x:-1.0/this.k*this.x,y:-1.0/this.k*this.y,k:1.0/this.k})
+  inverse() {
+    return new RegularTransform({ x: -1.0 / this.k * this.x, y: -1.0 / this.k * this.y, k: 1.0 / this.k })
   }
 }
 
 function swatches({
   color,
-  columns = null,
+  element,
   format = x => x,
   swatchSize = 15,
   swatchWidth = swatchSize,
   swatchHeight = swatchSize,
   marginLeft = 0
 }) {
-  const id = DOM.uid().id;
+  const id = "swatch";
 
-  if (columns !== null) return html`<div style="display: flex; align-items: center; margin-left: ${+marginLeft}px; min-height: 33px; font: 10px sans-serif;">
-  <style>
-
-.${id}-item {
-  break-inside: avoid;
-  display: flex;
-  align-items: center;
-  padding-bottom: 1px;
-}
-
-.${id}-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: calc(100% - ${+swatchWidth}px - 0.5em);
-}
-
-.${id}-swatch {
-  width: ${+swatchWidth}px;
-  height: ${+swatchHeight}px;
-  margin: 0 0.5em 0 0;
-}
-
-  </style>
-  <div style="width: 100%; columns: ${columns};">${color.domain().map(value => {
-    const label = format(value);
-    return html`<div class="${id}-item">
-      <div class="${id}-swatch" style="background:${color(value)};"></div>
-      <div class="${id}-label" title="${label.replace(/["&]/g, entity)}">${document.createTextNode(label)}</div>
-    </div>`;
-  })}
-  </div>
-</div>`;
-
-  return html`<div style="display: flex; align-items: center; min-height: 33px; margin-left: ${+marginLeft}px; font: 10px sans-serif;">
+  return d3.select(element).html(`<div style="display: flex; align-items: center; min-height: 33px; margin-left: ${+marginLeft}px; font: 10px sans-serif;">
   <style>
 
 .${id} {
@@ -261,7 +227,7 @@ function swatches({
 }
 
   </style>
-  <div>${color.domain().map(value => html`<span class="${id}" style="--color: ${color(value)}">${document.createTextNode(format(value))}</span>`)}</div>`;
+  <div>${Object.keys(color).map(value => `<span class="${id}" style="--color: ${color[value]}">${format(value)}</span>`).join(" ")}</div>`);
 }
 
 
@@ -270,8 +236,9 @@ function entity(character) {
 }
 
 function ramp(color, n = 256) {
-  const canvas = DOM.canvas(n, 1);
-  const context = canvas.getContext("2d");
+  const canvas = document.createElement("canvas");
+  let context = (canvas.width = n, canvas.height = 1, canvas).getContext("2d");
+
   for (let i = 0; i < n; ++i) {
     context.fillStyle = color(i / (n - 1));
     context.fillRect(i, 0, 1, 1);

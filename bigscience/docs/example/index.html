@@ -53,6 +53,20 @@
       
     }
 
+    .legendsView {
+      position: absolute;
+      left: 0px;
+      bottom: 0;
+      pointer-events: none; 
+      background:rgba(255, 255, 255, 0.6);
+      padding-left:10px;
+      padding-right:20px;
+      padding-top:2px;
+      padding-bottom:5px;
+      border-top-right-radius:5px;
+      
+    }
+
     #netviz {
       position: absolute;
       top: 0;
@@ -94,7 +108,12 @@
       overflow: visible;
     }
 
-
+    /* canvas {
+      -moz-filter: url(filter.svg#drop-shadow);
+      filter: url(filter.svg#drop-shadow);
+      -webkit-filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+      filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+    } */
 
 
     *:focus {
@@ -122,12 +141,17 @@
       top: 0;
       left: 0;
       height: 15px;
+      padding-bottom:10px;
+      /* padding-top:5px; */
+      padding-right:10px;
       padding-left:27px;
       pointer-events: none;
       color: #b30000;
       font-family: "Helvetica Neue", Helvetica, "Arial", sans-serif;
       font-weight: bold;
       z-index:10;
+      background-color:rgba(255,255,255,0.6);
+      border-bottom-right-radius:5px;
       
     }
 
@@ -160,7 +184,7 @@
 <body>
   <script type="module" src="main.js" defer></script>
   <div class="loaderContainer">
-    <div class="loader"></div>Processing edges...
+    <div class="loader"></div><span class="loaderText">Loading data...</span>
   </div>
 
   <div id="netviz"></div>
