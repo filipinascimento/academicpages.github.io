@@ -1,6 +1,6 @@
 import * as d3_base from "./web_modules/d3.js"
 import * as d3geo from "./web_modules/d3-geo-projection.js";
-import * as xnet from "./src/utils/xnet.js"
+import * as xnet from "./xnet.js"
 import noUiSlider from './web_modules/nouislider.js';
 import './web_modules/nouislider/distribute/nouislider.css.proxy.js';
 import './customSliders.css.proxy.js';
