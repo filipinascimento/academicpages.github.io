@@ -2,7 +2,8 @@
   "mount": {
     "public": "/",
     "src": "/_dist_",
-    "lib": "/_dist_"
+    "lib": "/_dist_",
+    "exclude": ['**/node_modules/**/*','build/**/*']
   },
   "plugins": []
 }
