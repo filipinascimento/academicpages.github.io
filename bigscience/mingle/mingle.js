@@ -1,1 +1,981 @@
-import"../web_modules/d3.js";(function(){Math.PHI=(1+Math.sqrt(5))/2;function L(a,b){var c=a[0]-b[0],f=a[1]-b[1];return Math.sqrt(c*c+f*f)}function y(a){return Math.sqrt(a[0]*a[0]+a[1]*a[1])}function M(a){var b=y(a);return H(1/b,a)}function u(a,b,c){return[a[0]*(1-c)+b[0]*c,a[1]*(1-c)+b[1]*c]}function N(a,b){return[a[0]+b[0],a[1]+b[1]]}function G(a,b){return[a[0]-b[0],a[1]-b[1]]}function P(a,b){return a[0]*b[0]+a[1]*b[1]}function H(a,b){return[b[0]*a,b[1]*a]}function aa(a,b,c){return[u(a[0],b[0],c),u(a[1],b[1],c)]}function ba(a){return JSON.parse(JSON.stringify(a))}function Q(a){var b,c=a.length,f=Array(a.length);for(b=0;b<c;++b)f[b]={node:a[b].node,pos:a[b].pos,normal:a[b].normal&&a[b].normal.slice()};return f}function R(a,b,c){var f=a.data.coords,e,h,i,j;b.length||b.push([(f[0]+f[2])/2,(f[1]+f[3])/2]),b.unshift([f[0],f[1]]),b.push([f[2],f[3]]),j=a.data.parents;if(j)for(e=0,h=j.length;e<h;++e)R(j[e],b.slice(),c);else c.push(b)}function ca(a,b){var c=a||b,f,e,h;return(!a||!b)&&(e=c.data.coords,f=[e[2]-e[0],e[3]-e[1]],h=[-f[1],f[0]],h=H(h,1/y(h))),h}function E(a,b,c,f){return{node:a,pos:b,normal:null}}function O(a,b,c){var f=a.data.coords,e,h,i,j,d,g;j=a.data.parents;if(j)for(e=0,h=j.length;e<h;++e)d=b.slice(),d.length||(i=[(f[0]+f[2])/2,(f[1]+f[3])/2],g=E(a,i,e,h),d.push(g)),g=E(a,[f[0],f[1]],e,h),d.unshift(g),g=E(a,[f[2],f[3]],e,h),d.push(g),O(j[e],d,c);else d=b.slice(),d.length||(i=[(f[0]+f[2])/2,(f[1]+f[3])/2],g=E(a,i,0,1),d.push(g)),g=E(a,[f[0],f[1]],0,1),d.unshift(g),g=E(a,[f[2],f[3]],0,1),d.push(g),c.push(d)}Graph.Node.prototype.expandEdges=function(){if(this.expandedEdges)return this.expandedEdges;var a=[];return O(this,[],a),this.expandedEdges=a,a},Graph.Node.prototype.unbundleEdges=function(a){var b=this.expandEdges(),c=Array(b.length),f=Math.min,e,h,i,j,d,g,k,m,l,n,o,s,z,p,q,t,v,w;a=a||0,this.unbundledEdges=this.unbundledEdges||{};if((a===0||a===1)&&this.unbundledEdges[a])return this.unbundledEdges[a];for(e=0,h=b.length;e<h;++e){for(d=b[e],w=d.length-1,g=Q(d),m=d[0].pos,l=d[w].pos,n=G(l,m),g[0].unbundledPos=g[0].pos.slice(),k=G(g[1].pos,g[0].pos),k=M([-k[1],k[0]]),g[0].normal=k,g[w].unbundledPos=g[d.length-1].pos.slice(),k=G(g[w].pos,g[w-1].pos),k=M([-k[1],k[0]]),g[w].normal=k,i=1,j=d.length-1;i<j;++i)o=d[i].pos,s=G(o,m),p=P(s,n),q=L(l,m),t=q*q,v=p/t,z=N(m,H(v,n)),g[i].unbundledPos=u(z,o,a),k=G(g[i+1].pos,g[i-1].pos),k=M([-k[1],k[0]]),g[i].normal=k;c[e]=g}return(a===0||a===1)&&(this.unbundledEdges[a]=c),c},Graph.Render={renderLine:function(a,b,c){c=c||{};var f=c.lineWidth||1,e=c.fillStyle||"gray",h,i,j,d,g,k;for(a.fillStyle=e,a.lineWidth=f,h=0,i=b.length;h<i;++h){for(g=b[h],a.beginPath(),j=0,d=g.length;j<d;++j)k=g[j].unbundledPos,j==0?a.moveTo(k[0],k[1]):a.lineTo(k[0],k[1]);a.stroke(),a.closePath()}},renderQuadratic:function(a,b,c){c=c||{};var f=c.lineWidth||1,e=c.fillStyle||"gray",h=c.adjustPosition||!1,i=(c.margin||0)*(c.delta||0),j,d,g,k,m,l,n,o,s,z,p,q,t,v,w,S,T,U,V,J,K,A,B,x,W,C,r,D,X,Y,Z,_,$;for(a.fillStyle=e,a.lineWidth=f,k=0,m=b.length;k<m;++k){for(s=b[k],x=null,C=null,r=s[0].node,a.lineWidth=(Math.max(1,r.data.weight)||1)*(c.scale||1),r.data.color&&Array.isArray(r.data.color)?(J=r.data.color[0],K=r.data.color[1],A=a.createLinearGradient(r.data.coords[0],r.data.coords[1],r.data.coords[2],r.data.coords[3]),A.addColorStop(0,J),A.addColorStop(.4,J),A.addColorStop(.6,K),A.addColorStop(1,K),a.strokeStyle=A):a.strokeStyle=r.data.color||a.strokeStyle,a.globalAlpha=r.data.alpha==void 0?1:r.data.alpha,a.beginPath(),l=0,o=s.length;l<o;++l)D=s[l],p=D.unbundledPos,l!==0&&(q=C||s[l-1].unbundledPos,h&&(p=this.adjustPosition(r.id,D,p,i,c.delta||0)),B=u(q,p,.5),t=u(q,B,l===1?0:c.curviness||0),w=p,v=u(B,w,l===o-1?1:1-(c.curviness||0)),x&&(a.moveTo(x[0],x[1]),a.quadraticCurveTo(q[0],q[1],t[0],t[1])),a.moveTo(t[0],t[1]),a.lineTo(v[0],v[1]),x=v,C=p);a.stroke(),a.closePath()}},renderQuadraticSAVE:function(a,b,c){c=c||{};var f=c.lineWidth||1,e=c.fillStyle||"gray",h=c.adjustPosition||!1,i=(c.margin||0)*(c.delta||0),j,d,g,k,m,l,n,o,s,z,p,q,t,v,w,S,T,U,V,J,K,A,B,x,W,C,r,D,X,Y,Z,_,$;for(k=0,m=b.length;k<m;++k){s=b[k],x=null,C=null,r=s[0].node;let F={width:(Math.max(1,r.data.weight)||1)*(c.scale||1),color:r.data.color||ctx.strokeStyle,edgeIndex:s[0].node.data.edgeIndex};for(F.path=new Path2D(),l=0,o=s.length;l<o;++l)D=s[l],p=D.unbundledPos,l!==0&&(q=C||s[l-1].unbundledPos,h&&(p=this.adjustPosition(r.id,D,p,i,c.delta||0)),B=u(q,p,.5),t=u(q,B,l===1?0:c.curviness||0),w=p,v=u(B,w,l===o-1?1:1-(c.curviness||0)),x&&(F.path.moveTo(x[0],x[1]),F.path.quadraticCurveTo(q[0],q[1],t[0],t[1])),F.path.moveTo(t[0],t[1]),F.path.lineTo(v[0],v[1]),x=v,C=p);a.push(F)}},adjustPosition:function(a,b,c,f,e){var h=b.node.data.nodeArray,i=1,j,d,g,k,m,l;if(h){for(j=h.length,d=Infinity,g=0,k=0,m=0;m<j;++m)l=h[m],l.id==a&&(d=m),m<d?g+=(l.data.weight||0)+f:m>d&&(k+=(l.data.weight||0)+f);c=N(c,H((g-(g+k)/2)*Math.min(i,e),b.normal))}return c},renderBezier:function(a,b,c){c=c||{};var f=c.curviness||0,e,h,i,j,d,g,k,m,l,n,o;for(e=0,h=b.length;e<h;++e)d=b[e],n=d[0].unbundledPos,a.strokeStyle=d[0].node.data.color||a.strokeStyle,a.lineWidth=d[0].node.data.weight||1,k=d[(d.length-1)/2].unbundledPos,d.length>3?(m=d[1].unbundledPos,l=d[(d.length-1)/2-1].unbundledPos,o=u(k,l,1-f),a.beginPath(),a.moveTo(n[0],n[1]),a.bezierCurveTo(m[0],m[1],l[0],l[1],o[0],o[1]),m=d[(d.length-1)/2+1].unbundledPos,l=d[d.length-2].unbundledPos,o=d[d.length-1].unbundledPos,1-f&&(n=u(k,m,1-f),a.lineTo(n[0],n[1])),a.bezierCurveTo(m[0],m[1],l[0],l[1],o[0],o[1]),a.stroke(),a.closePath()):(a.beginPath(),a.moveTo(n[0],n[1]),o=d[d.length-1].unbundledPos,a.lineTo(o[0],o[1]))},renderBezierSAVE:function(a,b,c){c=c||{};var f=c.curviness||0,e,h,i,j,d,g,k,m,l,n,o;for(e=0,h=b.length;e<h;++e){d=b[e],n=d[0].unbundledPos;let s=d[0].node.data.color||"#444444",z=d[0].node.data.weight||1,p={width:z,color:s,edgeIndex:d[0].node.data.edgeIndex};p.path=new Path2D(),k=d[(d.length-1)/2].unbundledPos,d.length>3?(m=d[1].unbundledPos,l=d[(d.length-1)/2-1].unbundledPos,o=u(k,l,1-f),p.path.moveTo(n[0],n[1]),p.path.bezierCurveTo(m[0],m[1],l[0],l[1],o[0],o[1]),m=d[(d.length-1)/2+1].unbundledPos,l=d[d.length-2].unbundledPos,o=d[d.length-1].unbundledPos,1-f&&(n=u(k,m,1-f),p.lineTo=n),p.path.bezierCurveTo(m[0],m[1],l[0],l[1],o[0],o[1])):(p.path.moveTo(n[0],n[1]),o=d[d.length-1].unbundledPos,p.path.lineTo(o[0],o[1])),a.push(p)}}};function I(a){this.options=a||{},this.graph=new Graph(),this.kdTree=null}return I.Graph=Graph.Render,I.prototype={setNodes:function(a){var b,c,f=this.graph;for(f.clear(),b=0,c=a.length;b<c;++b)f.addNode(a[b])},buildKdTree:function(){var a=[];this.graph.each(function(b){var c=b.data.coords;b.x=c[0],b.y=c[1],b.z=c[2],b.w=c[3],a.push(b)}),this.kdTree=new KdTree(a,function(b,c){var f=b.x-c.x,e=b.y-c.y,h=b.z-c.z,i=b.w-c.w;return Math.sqrt(f*f+e*e+h*h+i*i)},["x","y","z","w"])},buildNearestNeighborGraph:function(a){a=a||10;var b=this.graph,c,f,e;this.buildKdTree(),e=this.kdTree,b.each(function(h){var i=e.nearest(h,a),j,d;for(j=0,d=i.length;j<d;++j)c=i[j][0],f=i[j][1],c.id!=h.id&&b.addEdge(h,c)})},computeIntermediateNodePositions:function(a){var b,c,f,e,h,i,j,d,g;if(!a.data.nodes)return;f=this.getCentroids(a.data.nodes),d=this.costFunction.bind(this,a,f),e=0,h=1,i=.72,j=.1,g=this.goldenSectionSearch(e,h,i,j,d),d(g)},costFunction:function(a,b,c){var f,e,h,i,j,d,g;return c/=2,f=b[0],e=b[1],h=u(f,e,c),i=u(f,e,1-c),a.data.m1=h,a.data.m2=i,delete a.data.ink,j=this.getInkValue(a),d=this.getMaxTurningAngleValue(a,h,i),g=this.options.angleStrength||1.2,j*(1+Math.sin(d)/g)},goldenSectionSearch:function(a,b,c,f,e){var h=Math.PHI,i=2-Math.PHI,j=Math.abs,d;return c-b>b-a?d=b+i*(c-b):d=b-i*(b-a),j(c-a)<f*(j(b)+j(d))?(c+a)/2:e(d)<e(b)?c-b>b-a?this.goldenSectionSearch(b,d,c,f,e):this.goldenSectionSearch(a,d,b,f,e):c-b>b-a?this.goldenSectionSearch(a,b,d,f,e):this.goldenSectionSearch(d,b,c,f,e)},getCentroids:function(a){var b=[0,0],c=[0,0],f,e,h;for(e=0,h=a.length;e<h;++e)f=a[e].data.coords,b[0]+=f[0],b[1]+=f[1],c[0]+=f[2],c[1]+=f[3];return b[0]/=h,b[1]/=h,c[0]/=h,c[1]/=h,[b,c]},getInkValue:function(a,b){var c=a.data,f=Math.sqrt,e,h,i,j,d,g,k,m,l,n;b=b||0;if(!b&&(c.bundle||c.nodes)){for(l=c.bundle?c.bundle.data.nodes:c.nodes,j=c.m1,d=c.m2,g=0,k=0,m=l.length;k<m;++k)n=l[k],e=n.data.coords,h=j[0]-e[0],i=j[1]-e[1],g+=y([h,i]),h=d[0]-e[2],i=d[1]-e[3],g+=y([h,i]),g+=this.getInkValue(n,b+1);return b||(g+=L(j,d)),a.data.ink=g}if(c.parents){for(l=c.parents,j=[c.coords[0],c.coords[1]],d=[c.coords[2],c.coords[3]],g=0,k=0,m=l.length;k<m;++k)n=l[k],e=n.data.coords,h=j[0]-e[0],i=j[1]-e[1],g+=y([h,i]),h=d[0]-e[2],i=d[1]-e[3],g+=y([h,i]),g+=this.getInkValue(n,b+1);return b||(g+=L(j,d)),a.data.ink=g}return b?a.data.ink=0:(e=a.data.coords,h=e[0]-e[2],i=e[1]-e[3],a.data.ink=y([h,i]))},getMaxTurningAngleValue:function(a,b,c){var f=Math.sqrt,e=Math.abs,h=Math.acos,i=[b[0]-c[0],b[1]-c[1]],j=[-i[0],-i[1]],d=y(i),g=0,k,m,l,n,o,s,z,p,q,t,v;if(a.data.bundle||a.data.nodes){for(k=a.data.bundle?a.data.bundle.data.nodes:a.data.nodes,q=0,t=k.length;q<t;++q)p=k[q].data.coords,m=[p[0]-b[0],p[1]-b[1]],l=y(m),n=m[0]*i[0]+m[1]*i[1],o=e(h(n/l/d)),g=g<o?o:g,m=[p[2]-c[0],p[3]-c[1]],l=y(m),n=m[0]*j[0]+m[1]*j[1],o=e(h(n/l/d)),g=g<o?o:g;return g}return-1},getCombinedNode:function(a,b,c){a=a.data.bundle||a,b=b.data.bundle||b;var f=a.id+"-"+b.id,e=a.name+"-"+b.name,h=a.data.nodes||[a],i=b.data.nodes||[b],j=a.data.weight||0,d=b.data.weight||0,g=[],k;return a.id==b.id?a:(g.push.apply(g,h),g.push.apply(g,i),c=c||{},c.nodes=g,c.nodeArray=(a.data.nodeArray||[]).concat(b.data.nodeArray||[]),c.weight=j+d,k={id:f,name:e,data:c},this.computeIntermediateNodePositions(k),k)},coalesceNodes:function(a){var b=a[0],c=b.data,f=c.m1,e=c.m2,h=a.reduce(function(m,l){return m+(l.data.weight||0)},0),i=c.coords,j=c.bundle,d=[],g,k;if(f){for(i=[f[0],f[1],e[0],e[1]],g=0,k=a.length;g<k;++g)d.push.apply(d,a[g].data.nodeArray||(a[g].data.parents?[]:[a[g]]));return this.options.sort&&d.sort(this.options.sort),{id:j.id,name:j.id,data:{nodeArray:d,parents:a,coords:i,weight:h,parentsInk:j.data.ink}}}return a[0]},bundle:function(a,b,c){var f=this.graph;b.data.bundle=a,c.data.bundle=a,b.data.ink=a.data.ink,b.data.m1=a.data.m1,b.data.m2=a.data.m2,c.data.ink=a.data.ink,c.data.m1=a.data.m1,c.data.m2=a.data.m2},updateGraph:function(a,b,c,f){var e,h,i,j,d=function(g){var k=g.nodeTo.id;f[k]||j.push(g.nodeTo)};for(e=0,h=c.length;e<h;++e)i=c[e],j=[],i.eachEdge(d),a.removeNode(i.id);for(a.addNode(b),e=0,h=j.length;e<h;++e)a.addEdge(b,j[e])},coalesceGraph:function(){var a=this.graph,b=new Graph(),c={},f=-Infinity,e,h,i,j,d,g,k=this.updateGraph,m=this.coalesceNodes.bind(this);for(a.each(function(l){var n=l.data.group;f<n&&(f=n),c[n]||(c[n]={}),c[n][l.id]=l}),f++;f--;){j=c[f],e=[];for(h in j)e.push(j[h]);e.length&&(d=m(e),k(a,d,e,j))}},getMaximumInkSavingNeighbor:function(a){var b=a,c=this.getInkValue.bind(this),f=c(b),e=this.getCombinedNode.bind(this),h=Infinity,i=Array(2),j;return a.eachEdge(function(d){var g=d.nodeTo,k=c(g),m=e(b,g),l=c(m),n=l-(f+k);h>n&&(h=n,i[0]=b,i[1]=g,j=m)}),{bundle:i,inkTotal:h,combined:j}},MINGLE:function(){var a=this.graph,b=this,c=0,f=-1,e=0,h=0,i=function(d){d.data.group=f},j=function(d){if(d.data.group==f){var g=b.getMaximumInkSavingNeighbor(d),k=g.bundle,m=k[0],l=k[1],n=g.combined,o=-g.inkTotal;if(!m&&!l){e=-Infinity;return}o>0?(b.bundle(n,m,l),e+=o,l.data.group!=f?m.data.group=l.data.group:m.data.group=l.data.group=h):m.data.group=h,h++}};do e=0,h=0,a.each(i),a.each(j),this.coalesceGraph(),c+=e;while(e>0)}},window.Bundler=I,I})();
+import * as d3 from "../web_modules/d3.js"
+
+/*global define, Float32Array */
+(function () {
+
+
+  //General convenience functions and constants
+  Math.PHI = (1 + Math.sqrt(5)) / 2;
+
+  function $dist(a, b) {
+    var diffX = a[0] - b[0],
+        diffY = a[1] - b[1];
+    return Math.sqrt(diffX * diffX + diffY * diffY);
+  }
+
+  function $norm(a) {
+    return Math.sqrt(a[0] * a[0] + a[1] * a[1]);
+  }
+
+  function $normalize(a) {
+    var n = $norm(a);
+    return $mult(1 / n, a);
+  }
+
+  function $lerp(a, b, delta) {
+    return [ a[0] * (1 - delta) + b[0] * delta,
+             a[1] * (1 - delta) + b[1] * delta ];
+  }
+
+  function $add(a, b) {
+    return [ a[0] + b[0], a[1] + b[1] ];
+  }
+
+  function $sub(a, b) {
+    return [ a[0] - b[0], a[1] - b[1] ];
+  }
+
+  function $dot(a, b) {
+    return a[0] * b[0] + a[1] * b[1];
+  }
+
+  function $mult(k, a) {
+    return [ a[0] * k, a[1] * k ];
+  }
+
+  function $lerpPoint(from, to, delta) {
+    return [ $lerp(from[0], to[0], delta), $lerp(from[1], to[1], delta) ];
+  }
+
+  function cloneJSON(json) {
+    return JSON.parse( JSON.stringify( json ) );
+  }
+
+  function cloneEdge(json) {
+    var i, l = json.length, ans = Array(json.length);
+    for (i = 0; i < l; ++i) {
+      ans[i] = {
+        node: json[i].node,
+        pos: json[i].pos,
+        normal: json[i].normal && json[i].normal.slice()
+      };
+    }
+    return ans;
+  }
+
+  //Extend generic Graph class with bundle methods and rendering options
+  function expandEdgesHelper(node, array, collect) {
+    var coords = node.data.coords, i, l, p, ps;
+
+    if (!array.length) {
+      array.push([ (coords[0] + coords[2]) / 2,
+                   (coords[1] + coords[3]) / 2 ]);
+    }
+
+    array.unshift([ coords[0], coords[1] ]);
+    array.push ([ coords[2], coords[3] ]);
+    ps = node.data.parents;
+    if (ps) {
+      for (i = 0, l = ps.length; i < l; ++i) {
+        expandEdgesHelper(ps[i], array.slice(), collect);
+      }
+    } else {
+      collect.push(array);
+    }
+  }
+
+  function setNormalVector(nodeFrom, nodeTo) {
+    var node = nodeFrom || nodeTo, dir, coords, normal;
+    if (!nodeFrom || !nodeTo) {
+      coords = node.data.coords;
+      dir = [ coords[2] - coords[0], coords[3] - coords[1] ];
+      normal = [ -dir[1], dir[0] ];
+      normal = $mult(normal, 1 / $norm(normal));
+    }
+    return normal;
+  }
+
+  function createPosItem(node, pos, index, total) {
+    return {
+      node: node,//.toJSON(),
+      pos: pos,
+      normal: null
+    };
+  }
+
+  //Extend generic Graph class with bundle methods and rendering options
+  function expandEdgesRichHelper(node, array, collect) {
+    var coords = node.data.coords, i, l, p, ps, a, posItem;
+    ps = node.data.parents;
+    if (ps) {
+      for (i = 0, l = ps.length; i < l; ++i) {
+        a = array.slice();
+        if (!a.length) {
+          p = [ (coords[0] + coords[2]) / 2, (coords[1] + coords[3]) / 2 ];
+          posItem = createPosItem(node, p, i, l);
+          a.push(posItem);
+        }
+
+        posItem = createPosItem(node, [ coords[0], coords[1] ], i, l);
+        a.unshift(posItem);
+        posItem = createPosItem(node, [ coords[2], coords[3] ], i, l);
+        a.push (posItem);
+
+        expandEdgesRichHelper(ps[i], a, collect);
+      }
+    } else {
+      a = array.slice();
+      if (!a.length) {
+        p = [ (coords[0] + coords[2]) / 2, (coords[1] + coords[3]) / 2 ];
+        posItem = createPosItem(node, p, 0, 1);
+        a.push(posItem);
+      }
+
+      posItem = createPosItem(node, [ coords[0], coords[1] ], 0, 1);
+      a.unshift(posItem);
+      posItem = createPosItem(node, [ coords[2], coords[3] ], 0, 1);
+      a.push (posItem);
+
+      collect.push(a);
+    }
+  }
+
+  Graph.Node.prototype.expandEdges = function() {
+    if (this.expandedEdges) {
+      return this.expandedEdges;
+    }
+    var ans = [];
+    expandEdgesRichHelper(this, [], ans);
+    this.expandedEdges = ans;
+    return ans;
+  };
+
+  Graph.Node.prototype.unbundleEdges = function(delta) {
+    var expandedEdges = this.expandEdges(),
+        ans = Array(expandedEdges.length),
+        min = Math.min,
+        i, l, j, n, edge, edgeCopy, normal, x0, xk, xk_x0, xi, xi_x0, xi_bar, dot, norm, norm2, c, last;
+
+    delta = delta || 0;
+    this.unbundledEdges = this.unbundledEdges || {};
+
+    if ((delta === 0 || delta === 1) &&
+        this.unbundledEdges[delta]) {
+      return this.unbundledEdges[delta];
+    }
+
+    for (i = 0, l = expandedEdges.length; i < l; ++i) {
+      edge = expandedEdges[i];
+      last = edge.length -1;
+      edgeCopy = cloneEdge(edge);
+      //edgeCopy = cloneJSON(edge);
+      x0 = edge[0].pos;
+      xk = edge[last].pos;
+      xk_x0 = $sub(xk, x0);
+
+      edgeCopy[0].unbundledPos = edgeCopy[0].pos.slice();
+      normal = $sub(edgeCopy[1].pos, edgeCopy[0].pos);
+      normal = $normalize([ -normal[1], normal[0] ]);
+      edgeCopy[0].normal = normal;
+
+      edgeCopy[last].unbundledPos = edgeCopy[edge.length - 1].pos.slice();
+      normal = $sub(edgeCopy[last].pos, edgeCopy[last -1].pos);
+      normal = $normalize([ -normal[1], normal[0] ]);
+      edgeCopy[last].normal = normal;
+
+      for (j = 1, n = edge.length -1; j < n; ++j) {
+        xi = edge[j].pos;
+        xi_x0 = $sub(xi, x0);
+        dot = $dot(xi_x0, xk_x0);
+        norm = $dist(xk, x0);
+        norm2 = norm * norm;
+        c = dot / norm2;
+        xi_bar = $add(x0, $mult(c, xk_x0));
+        edgeCopy[j].unbundledPos = $lerp(xi_bar, xi, delta);
+        normal = $sub(edgeCopy[j + 1].pos, edgeCopy[j - 1].pos);
+        normal = $normalize([ -normal[1], normal[0] ]);
+        edgeCopy[j].normal = normal;
+      }
+      ans[i] = edgeCopy;
+    }
+
+    if (delta === 0 || delta === 1) {
+      this.unbundledEdges[delta] = ans;
+    }
+
+    return ans;
+  };
+
+  Graph.Render = {
+    renderLine: function(ctx, edges, options) {
+      options = options || {};
+      var lineWidth = options.lineWidth || 1,
+          fillStyle = options.fillStyle || 'gray',
+          i, l, j, n, e, pos;
+
+      ctx.fillStyle = fillStyle;
+      ctx.lineWidth = lineWidth;
+      for (i = 0, l = edges.length; i < l; ++i) {
+        e = edges[i];
+        ctx.beginPath();
+        for (j = 0, n = e.length; j < n; ++j) {
+          pos = e[j].unbundledPos;
+          if (j == 0) {
+            ctx.moveTo(pos[0], pos[1]);
+          } else {
+            ctx.lineTo(pos[0], pos[1]);
+          }
+        }
+        ctx.stroke();
+        ctx.closePath();
+      }
+    },
+
+    renderQuadratic: function(ctx, edges, options) {
+      options = options || {};
+      var lineWidth = options.lineWidth || 1,
+          fillStyle = options.fillStyle || 'gray',
+          shallAdjust = options.adjustPosition || false,
+          margin = (options.margin || 0) * (options.delta || 0),
+          lengthBefore, lengthAfter,
+          index, i, l, j, k, n, e, node, pos, pos0, pos1, pos2, pos3, pos01, pos02, pos03, pos04, colorFrom, colorTo, grd,
+          midPos, quadStart, weightStart, posStart, nodeStart, posItem, posItemStart,
+          dist, distMin, nodeArray, nodeLength;
+
+      ctx.fillStyle = fillStyle;
+      ctx.lineWidth = lineWidth;
+
+      for (i = 0, l = edges.length; i < l; ++i) {
+        e = edges[i];
+        quadStart = null;
+        posStart = null;
+        nodeStart = e[0].node;
+        ctx.lineWidth = (Math.max(1, nodeStart.data.weight) || 1) * (options.scale || 1);
+        if (nodeStart.data.color && Array.isArray(nodeStart.data.color)) {
+          colorFrom = nodeStart.data.color[0];
+          colorTo = nodeStart.data.color[1];
+          grd = ctx.createLinearGradient(nodeStart.data.coords[0],
+                                         nodeStart.data.coords[1],
+                                         nodeStart.data.coords[2],
+                                         nodeStart.data.coords[3]);
+          grd.addColorStop(0, colorFrom);
+          grd.addColorStop(0.4, colorFrom);
+          grd.addColorStop(0.6, colorTo);
+          grd.addColorStop(1, colorTo);
+          ctx.strokeStyle = grd;
+        } else {
+          ctx.strokeStyle = nodeStart.data.color || ctx.strokeStyle;
+        }
+        ctx.globalAlpha = nodeStart.data.alpha == undefined ? 1 : nodeStart.data.alpha;
+        ctx.beginPath();
+        for (j = 0, n = e.length; j < n; ++j) {
+          posItem = e[j];
+          pos = posItem.unbundledPos;
+          if (j !== 0) {
+            pos0 = posStart || e[j - 1].unbundledPos;
+            if(shallAdjust){
+              pos = this.adjustPosition(nodeStart.id, posItem, pos, margin, options.delta || 0);
+            }
+            midPos = $lerp(pos0, pos, 0.5);
+            pos1 = $lerp(pos0, midPos, j === 1 ? 0 : options.curviness || 0);
+            pos3 = pos;
+            pos2 = $lerp(midPos, pos3, j === n - 1 ? 1 : (1 - (options.curviness || 0)));
+            //ctx.lineCap = 'butt';//'round';
+            //ctx.beginPath();
+            if (quadStart) {
+              //ctx.strokeStyle = 'black';
+              ctx.moveTo(quadStart[0], quadStart[1]);
+              ctx.quadraticCurveTo(pos0[0], pos0[1], pos1[0], pos1[1]);
+              //ctx.stroke();
+              //ctx.closePath();
+            }
+            //ctx.beginPath();
+            //ctx.strokeStyle = 'red';
+            ctx.moveTo(pos1[0], pos1[1]);
+            ctx.lineTo(pos2[0], pos2[1]);
+            //ctx.stroke();
+            //ctx.closePath();
+            quadStart = pos2;
+            posStart = pos;
+          }
+        }
+        ctx.stroke();
+        ctx.closePath();
+      }
+    },
+
+    renderQuadraticSAVE: function(entries, edges, options) {
+      options = options || {};
+      var lineWidth = options.lineWidth || 1,
+          fillStyle = options.fillStyle || 'gray',
+          shallAdjust = options.adjustPosition || false,
+          margin = (options.margin || 0) * (options.delta || 0),
+          lengthBefore, lengthAfter,
+          index, i, l, j, k, n, e, node, pos, pos0, pos1, pos2, pos3, pos01, pos02, pos03, pos04, colorFrom, colorTo, grd,
+          midPos, quadStart, weightStart, posStart, nodeStart, posItem, posItemStart,
+          dist, distMin, nodeArray, nodeLength;
+
+      // ctx.fillStyle = fillStyle;
+      // ctx.lineWidth = lineWidth;
+
+      for (i = 0, l = edges.length; i < l; ++i) {
+
+
+        e = edges[i];
+        quadStart = null;
+        posStart = null;
+        nodeStart = e[0].node;
+        // ctx.lineWidth = (Math.max(1, nodeStart.data.weight) || 1) * (options.scale || 1);
+        // if (nodeStart.data.color && Array.isArray(nodeStart.data.color)) {
+        //   colorFrom = nodeStart.data.color[0];
+        //   colorTo = nodeStart.data.color[1];
+        //   grd = ctx.createLinearGradient(nodeStart.data.coords[0],
+        //                                  nodeStart.data.coords[1],
+        //                                  nodeStart.data.coords[2],
+        //                                  nodeStart.data.coords[3]);
+        //   grd.addColorStop(0, colorFrom);
+        //   grd.addColorStop(0.4, colorFrom);
+        //   grd.addColorStop(0.6, colorTo);
+        //   grd.addColorStop(1, colorTo);
+        //   ctx.strokeStyle = grd;
+        // } else {
+        // ctx.strokeStyle = nodeStart.data.color || ctx.strokeStyle;
+        // }
+        // ctx.globalAlpha = nodeStart.data.alpha == undefined ? 1 : nodeStart.data.alpha;
+
+        let entry = {
+          width:(Math.max(1, nodeStart.data.weight) || 1) * (options.scale || 1),
+          color:nodeStart.data.color || ctx.strokeStyle,
+          edgeIndex: e[0].node.data.edgeIndex,
+        }
+
+        entry.path = new Path2D();
+        // ctx.beginPath();
+        for (j = 0, n = e.length; j < n; ++j) {
+          posItem = e[j];
+          pos = posItem.unbundledPos;
+          if (j !== 0) {
+            pos0 = posStart || e[j - 1].unbundledPos;
+            if(shallAdjust){
+              pos = this.adjustPosition(nodeStart.id, posItem, pos, margin, options.delta || 0);
+            }
+            midPos = $lerp(pos0, pos, 0.5);
+            pos1 = $lerp(pos0, midPos, j === 1 ? 0 : options.curviness || 0);
+            pos3 = pos;
+            pos2 = $lerp(midPos, pos3, j === n - 1 ? 1 : (1 - (options.curviness || 0)));
+            //ctx.lineCap = 'butt';//'round';
+            //ctx.beginPath();
+            if (quadStart) {
+              //ctx.strokeStyle = 'black';
+              entry.path.moveTo(quadStart[0], quadStart[1]);
+              entry.path.quadraticCurveTo(pos0[0], pos0[1], pos1[0], pos1[1]);
+              //ctx.stroke();
+              //ctx.closePath();
+            }
+            //ctx.beginPath();
+            //ctx.strokeStyle = 'red';
+            entry.path.moveTo(pos1[0], pos1[1]);
+            entry.path.lineTo(pos2[0], pos2[1]);
+            //ctx.stroke();
+            //ctx.closePath();
+            quadStart = pos2;
+            posStart = pos;
+          }
+        }
+        // ctx.stroke();
+        // ctx.closePath();
+
+        entries.push(entry);
+      }
+    },
+    adjustPosition: function(id, posItem, pos, margin, delta) {
+      var nodeArray = posItem.node.data.nodeArray,
+          epsilon = 1,
+          nodeLength, index, lengthBefore,
+          lengthAfter, k, node;
+
+      if (nodeArray) {
+        nodeLength = nodeArray.length;
+        index = Infinity;
+        lengthBefore = 0;
+        lengthAfter = 0;
+        for (k = 0; k < nodeLength; ++k) {
+          node = nodeArray[k];
+          if (node.id == id) {
+            index = k;
+          }
+          if (k < index) {
+            lengthBefore += (node.data.weight || 0) + margin;
+          } else if (k > index) {
+            lengthAfter += (node.data.weight || 0) + margin;
+          }
+        }
+        //remove -margin to get the line weight into account.
+        //pos = $add(pos, $mult((lengthBefore - (lengthBefore + lengthAfter) / 2) * -margin, posItem.normal));
+        pos = $add(pos, $mult((lengthBefore - (lengthBefore + lengthAfter) / 2) * Math.min(epsilon, delta), posItem.normal));
+      }
+
+      return pos;
+    },
+
+    renderBezier: function(ctx, edges, options) {
+      options = options || {};
+      var pct = options.curviness || 0,
+          i, l, j, n, e, pos, midpoint, c1, c2, start, end;
+
+      for (i = 0, l = edges.length; i < l; ++i) {
+        e = edges[i];
+        start = e[0].unbundledPos;
+        ctx.strokeStyle = e[0].node.data.color || ctx.strokeStyle;
+        ctx.lineWidth = e[0].node.data.weight || 1;
+        midpoint = e[(e.length - 1) / 2].unbundledPos;
+        if (e.length > 3) {
+          c1 = e[1].unbundledPos;
+          c2 = e[(e.length - 1) / 2 - 1].unbundledPos;
+          end = $lerp(midpoint, c2, 1 - pct);
+          ctx.beginPath();
+          ctx.moveTo(start[0], start[1]);
+          ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+          c1 = e[(e.length - 1) / 2 + 1].unbundledPos;
+          c2 = e[e.length - 2].unbundledPos;
+          end = e[e.length - 1].unbundledPos;
+          if (1 - pct) {
+            //line to midpoint + pct of something
+            start = $lerp(midpoint, c1, 1 - pct);
+            ctx.lineTo(start[0], start[1]);
+          }
+          ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+          ctx.stroke();
+          ctx.closePath();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(start[0], start[1]);
+          end = e[e.length -1].unbundledPos;
+          ctx.lineTo(end[0], end[1]);
+        }
+      }
+    },
+    renderBezierSAVE: function(entries, edges, options) {
+      options = options || {};
+      var pct = options.curviness || 0,
+          i, l, j, n, e, pos, midpoint, c1, c2, start, end;
+      for (i = 0, l = edges.length; i < l; ++i) {
+        e = edges[i];
+        start = e[0].unbundledPos;
+        let lineStrokeColor = e[0].node.data.color || "#444444";
+        let lineWidth = e[0].node.data.weight || 1;
+        
+        let entry = {
+          width:lineWidth,
+          color:lineStrokeColor,
+          edgeIndex: e[0].node.data.edgeIndex,
+        }
+        entry.path = new Path2D();
+        // let path = g
+        //   .append("path")
+        //   .attr("fill", "none")
+        //   .attr("stroke", lineStrokeColor)
+        //   .attr("stroke-width", lineWidth)
+        midpoint = e[(e.length - 1) / 2].unbundledPos;
+        if (e.length > 3) {
+          c1 = e[1].unbundledPos;
+          c2 = e[(e.length - 1) / 2 - 1].unbundledPos;
+          end = $lerp(midpoint, c2, 1 - pct);
+          // entry.moveTo = start;
+          entry.path.moveTo(start[0], start[1]);
+          // entry.bezierCurveTo1 = [c1,c2,end];
+          entry.path.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+          c1 = e[(e.length - 1) / 2 + 1].unbundledPos;
+          c2 = e[e.length - 2].unbundledPos;
+          end = e[e.length - 1].unbundledPos;
+          if (1 - pct) {
+            //line to midpoint + pct of something
+            start = $lerp(midpoint, c1, 1 - pct);
+            entry.lineTo = start;
+            
+          }
+          // entry.bezierCurveTo2 = [c1,c2,end];
+          entry.path.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+          // ctx.stroke();
+          // entry.shallClose = true;
+        } else {
+
+          // ctx.beginPath();
+          entry.path.moveTo(start[0], start[1]);
+          // entry.moveTo = start;
+          end = e[e.length -1].unbundledPos;
+          entry.path.lineTo(end[0], end[1]);
+          // entry.lineTo = end;
+        }
+        entries.push(entry);
+      }
+    }
+  };
+
+
+  //Edge bundling algorithm class.
+  function Bundler(options) {
+    this.options = options || {};
+    this.graph = new Graph();
+    this.kdTree = null;
+  }
+
+  //copy static methods to render lines and other from Graph
+  Bundler.Graph = Graph.Render;
+
+  Bundler.prototype = {
+    setNodes: function(nodes) {
+      var i, l, graph = this.graph;
+      graph.clear();
+      for (i = 0, l = nodes.length; i < l; ++i) {
+        graph.addNode(nodes[i]);
+      }
+    },
+
+    buildKdTree: function() {
+      var nodeArray = [];
+      this.graph.each(function(n) {
+        var coords = n.data.coords;
+        n.x = coords[0];
+        n.y = coords[1];
+        n.z = coords[2];
+        n.w = coords[3];
+        nodeArray.push(n);
+      });
+
+      this.kdTree = new KdTree(nodeArray, function(a, b) {
+        var diff0 = a.x - b.x,
+            diff1 = a.y - b.y,
+            diff2 = a.z - b.z,
+            diff3 = a.w - b.w;
+
+        return Math.sqrt(diff0 * diff0 + diff1 * diff1 + diff2 * diff2 + diff3 * diff3);
+      }, ['x', 'y', 'z', 'w']);
+    },
+
+    buildNearestNeighborGraph: function(k) {
+      k = k || 10;
+      var graph = this.graph, node, dist, kdTree;
+      this.buildKdTree();
+      kdTree = this.kdTree;
+      graph.each(function(n) {
+        var nodes = kdTree.nearest(n, k), i, l;
+        for (i = 0, l = nodes.length; i < l; ++i) {
+          node = nodes[i][0];
+          dist = nodes[i][1];
+          if (node.id != n.id) {
+            graph.addEdge(n, node);
+          }
+        }
+      });
+    },
+
+    computeIntermediateNodePositions: function(node) {
+      var m1, m2, centroids, a, b, c, tau, f, res;
+      if (!node.data.nodes) {
+        return;
+      }
+      centroids = this.getCentroids(node.data.nodes);
+      f = this.costFunction.bind(this, node, centroids);
+      a = 0;
+      b = 1;
+      c = 0.72; //because computers
+      tau = 0.1;
+      res = this.goldenSectionSearch(a, b, c, tau, f);
+      f(res); //set m1 and m2;
+    },
+
+    costFunction: function(node, centroids, x) {
+        var top, bottom, m1, m2, ink, alpha, p;
+        x /= 2;
+        top = centroids[0];
+        bottom = centroids[1];
+        m1 = $lerp(top, bottom, x);
+        m2 = $lerp(top, bottom, 1 - x);
+        node.data.m1 = m1;
+        node.data.m2 = m2;
+        delete node.data.ink;
+        ink = this.getInkValue(node);
+        alpha = this.getMaxTurningAngleValue(node, m1, m2);
+        p = this.options.angleStrength || 1.2;
+        return ink * (1 + Math.sin(alpha) / p);
+    },
+
+    goldenSectionSearch: function(a, b, c, tau, f) {
+      var phi = Math.PHI,
+          resphi = 2 - Math.PHI,
+          abs = Math.abs, x;
+
+      if (c - b > b - a) {
+        x = b + resphi * (c - b);
+      } else {
+        x = b - resphi * (b - a);
+      }
+      if (abs(c - a) < tau * (abs(b) + abs(x))) {
+        return (c + a) / 2;
+      }
+      if (f(x) < f(b)) {
+        if (c - b > b - a) {
+          return this.goldenSectionSearch(b, x, c, tau, f);
+        }
+        return this.goldenSectionSearch(a, x, b, tau, f);
+      }
+      if (c - b > b - a) {
+        return this.goldenSectionSearch(a, b, x, tau, f);
+      }
+      return this.goldenSectionSearch(x, b, c, tau, f);
+    },
+
+    getCentroids: function(nodes) {
+      var topCentroid = [0, 0],
+          bottomCentroid = [0, 0],
+          coords, i, l;
+
+      for (i = 0, l = nodes.length; i < l; ++i) {
+        coords = nodes[i].data.coords;
+        topCentroid[0] += coords[0];
+        topCentroid[1] += coords[1];
+        bottomCentroid[0] += coords[2];
+        bottomCentroid[1] += coords[3];
+      }
+
+      topCentroid[0] /= l;
+      topCentroid[1] /= l;
+      bottomCentroid[0] /= l;
+      bottomCentroid[1] /= l;
+
+      return [ topCentroid, bottomCentroid ];
+    },
+
+    getInkValue: function(node, depth) {
+      var data = node.data,
+          sqrt = Math.sqrt,
+          coords, diffX, diffY,
+          m1, m2, acum, i, l, nodes,
+          ni;
+
+      depth = depth || 0;
+
+      //bundled node
+      if (!depth && (data.bundle || data.nodes)) {
+        nodes = data.bundle ? data.bundle.data.nodes : data.nodes;
+        m1 = data.m1;
+        m2 = data.m2;
+        acum = 0;
+        for (i = 0, l = nodes.length; i < l; ++i) {
+          ni = nodes[i];
+          coords = ni.data.coords;
+          diffX = m1[0] - coords[0];
+          diffY = m1[1] - coords[1];
+          acum += $norm([ diffX, diffY ]);
+          diffX = m2[0] - coords[2];
+          diffY = m2[1] - coords[3];
+          acum += $norm([ diffX, diffY ]);
+          acum += this.getInkValue(ni, depth + 1);
+        }
+        if (!depth) {
+          acum += $dist(m1, m2);
+        }
+        return (node.data.ink = acum);
+      }
+
+      //coalesced node
+      if (data.parents) {
+        nodes = data.parents;
+        m1 = [ data.coords[0], data.coords[1] ];
+        m2 = [ data.coords[2], data.coords[3] ];
+        acum = 0;
+        for (i = 0, l = nodes.length; i < l; ++i) {
+          ni = nodes[i];
+          coords = ni.data.coords;
+          diffX = m1[0] - coords[0];
+          diffY = m1[1] - coords[1];
+          acum += $norm([ diffX, diffY ]);
+          diffX = m2[0] - coords[2];
+          diffY = m2[1] - coords[3];
+          acum += $norm([ diffX, diffY ]);
+          acum += this.getInkValue(ni, depth + 1);
+        }
+        //only add the distance if this is the first recursion
+        if (!depth) {
+          acum += $dist(m1, m2);
+        }
+        return (node.data.ink = acum);
+      }
+
+      //simple node
+      if (depth) {
+        return (node.data.ink = 0);
+      }
+      coords = node.data.coords;
+      diffX = coords[0] - coords[2];
+      diffY = coords[1] - coords[3];
+      return (node.data.ink = $norm([ diffX, diffY ]));
+
+    },
+
+    getMaxTurningAngleValue: function(node, m1, m2) {
+      var sqrt = Math.sqrt,
+          abs = Math.abs,
+          acos = Math.acos,
+          m2Tom1 = [ m1[0] - m2[0], m1[1] - m2[1] ],
+          m1Tom2 = [ -m2Tom1[0], -m2Tom1[1] ],
+          m1m2Norm = $norm(m2Tom1),
+          angle = 0, nodes, vec, norm, dot, angleValue,
+          x, y, coords, i, l, n;
+
+      if (node.data.bundle || node.data.nodes) {
+        nodes = node.data.bundle ? node.data.bundle.data.nodes : node.data.nodes;
+        for (i = 0, l = nodes.length; i < l; ++i) {
+          coords = nodes[i].data.coords;
+          vec = [ coords[0] - m1[0], coords[1] - m1[1] ];
+          norm = $norm(vec);
+          dot = vec[0] * m2Tom1[0] + vec[1] * m2Tom1[1];
+          angleValue = abs(acos(dot / norm / m1m2Norm));
+          angle = angle < angleValue ? angleValue : angle;
+
+          vec = [ coords[2] - m2[0], coords[3] - m2[1] ];
+          norm = $norm(vec);
+          dot = vec[0] * m1Tom2[0] + vec[1] * m1Tom2[1];
+          angleValue = abs(acos(dot / norm / m1m2Norm));
+          angle = angle < angleValue ? angleValue : angle;
+        }
+
+        return angle;
+      }
+
+      return -1;
+    },
+
+    getCombinedNode: function(node1, node2, data) {
+      node1 = node1.data.bundle || node1;
+      node2 = node2.data.bundle || node2;
+
+      var id = node1.id + '-' + node2.id,
+          name = node1.name + '-' + node2.name,
+          nodes1 = node1.data.nodes || [ node1 ],
+          nodes2 = node2.data.nodes || [ node2 ],
+          weight1 = node1.data.weight || 0,
+          weight2 = node2.data.weight || 0,
+          nodes = [], ans;
+
+      if (node1.id == node2.id) {
+        return node1;
+      }
+      nodes.push.apply(nodes, nodes1);
+      nodes.push.apply(nodes, nodes2);
+      data = data || {};
+      data.nodes = nodes;
+      data.nodeArray = (node1.data.nodeArray || []).concat(node2.data.nodeArray || []);
+      data.weight = weight1 + weight2;
+      ans = {
+        id: id,
+        name: name,
+        data: data
+      };
+
+      this.computeIntermediateNodePositions(ans);
+
+      return ans;
+    },
+
+    coalesceNodes: function(nodes) {
+      var node = nodes[0],
+          data = node.data,
+          m1 = data.m1,
+          m2 = data.m2,
+          weight = nodes.reduce(function(acum, n) { return acum + (n.data.weight || 0); }, 0),
+          coords = data.coords,
+          bundle = data.bundle,
+          nodeArray = [],
+          i, l;
+
+      if (m1) {
+        coords = [ m1[0], m1[1], m2[0], m2[1] ];
+
+        //flattened nodes for cluster.
+        for (i = 0, l = nodes.length; i < l; ++i) {
+          nodeArray.push.apply(nodeArray, nodes[i].data.nodeArray || (nodes[i].data.parents ? [] : [ nodes[i] ]));
+        }
+
+        if (this.options.sort) {
+          nodeArray.sort(this.options.sort);
+        }
+
+        //if (!nodeArray.length || (typeof nodeArray[0].id == 'string')) {
+          //debugger;
+        //}
+
+        return {
+          id: bundle.id,
+          name: bundle.id,
+          data: {
+            nodeArray: nodeArray,
+            parents: nodes,
+            coords: coords,
+            weight: weight,
+            parentsInk: bundle.data.ink
+          }
+        };
+      }
+
+      return nodes[0];
+     },
+
+    bundle: function(combinedNode, node1, node2) {
+      var graph = this.graph;
+
+      node1.data.bundle = combinedNode;
+      node2.data.bundle = combinedNode;
+
+      node1.data.ink = combinedNode.data.ink;
+      node1.data.m1 = combinedNode.data.m1;
+      node1.data.m2 = combinedNode.data.m2;
+      //node1.data.nodeArray = combinedNode.data.nodeArray;
+
+      node2.data.ink = combinedNode.data.ink;
+      node2.data.m1 = combinedNode.data.m1;
+      node2.data.m2 = combinedNode.data.m2;
+      //node2.data.nodeArray = combinedNode.data.nodeArray;
+    },
+
+    updateGraph: function(graph, groupedNode, nodes, ids) {
+      var i, l, n, connections,
+      checkConnection = function(e) {
+        var nodeToId = e.nodeTo.id;
+        if (!ids[nodeToId]) {
+          connections.push(e.nodeTo);
+        }
+      };
+      for (i = 0, l = nodes.length; i < l; ++i) {
+        n = nodes[i];
+        connections = [];
+        n.eachEdge(checkConnection);
+        graph.removeNode(n.id);
+      }
+      graph.addNode(groupedNode);
+      for (i = 0, l = connections.length; i < l; ++i) {
+        graph.addEdge(groupedNode, connections[i]);
+      }
+    },
+
+    coalesceGraph: function() {
+      var graph = this.graph,
+          newGraph = new Graph(),
+          groupsIds = {},
+          maxGroup = -Infinity,
+          nodes, i, l, ids, groupedNode, connections,
+          updateGraph = this.updateGraph,
+          coalesceNodes = this.coalesceNodes.bind(this);
+
+      graph.each(function(node) {
+        var group = node.data.group;
+        if (maxGroup < group) {
+          maxGroup = group;
+        }
+        if (!groupsIds[group]) {
+          groupsIds[group] = {};
+        }
+        groupsIds[group][node.id] = node;
+      });
+
+      maxGroup++;
+      while (maxGroup--) {
+        ids = groupsIds[maxGroup];
+        nodes = [];
+        for (i in ids) {
+          nodes.push(ids[i]);
+        }
+        if (nodes.length) {
+          groupedNode = coalesceNodes(nodes);
+          updateGraph(graph, groupedNode, nodes, ids);
+        }
+      }
+    },
+
+    getMaximumInkSavingNeighbor: function(n) {
+      var nodeFrom = n,
+          getInkValue = this.getInkValue.bind(this),
+          inkFrom = getInkValue(nodeFrom),
+          combineNodes = this.getCombinedNode.bind(this),
+          inkTotal = Infinity,
+          bundle = Array(2),
+          combinedBundle;
+
+      n.eachEdge(function(e) {
+        var nodeTo = e.nodeTo,
+            inkTo = getInkValue(nodeTo),
+            combined = combineNodes(nodeFrom, nodeTo),
+            inkUnion = getInkValue(combined),
+            inkValue = inkUnion - (inkFrom + inkTo);
+
+        if (inkTotal > inkValue) {
+          inkTotal = inkValue;
+          bundle[0] = nodeFrom;
+          bundle[1] = nodeTo;
+          combinedBundle = combined;
+        }
+      });
+
+      return {
+        bundle: bundle,
+        inkTotal: inkTotal,
+        combined: combinedBundle
+      };
+    },
+
+    MINGLE: function() {
+      var edgeProximityGraph = this.graph,
+          that = this,
+          totalGain = 0,
+          ungrouped = -1,
+          gain = 0,
+          k = 0,
+          clean = function(n) { n.data.group = ungrouped; },
+          nodeMingle = function(node) {
+            if (node.data.group == ungrouped) {
+              var ans = that.getMaximumInkSavingNeighbor(node),
+                  bundle = ans.bundle,
+                  u = bundle[0],
+                  v = bundle[1],
+                  combined = ans.combined,
+                  gainUV = -ans.inkTotal;
+
+              //graph has been collapsed and is now only one node
+              if (!u && !v) {
+                gain = -Infinity;
+                return;
+              }
+
+              if (gainUV > 0) {
+                that.bundle(combined, u, v);
+                gain += gainUV;
+                if (v.data.group != ungrouped) {
+                  u.data.group = v.data.group;
+                } else {
+                  u.data.group = v.data.group = k;
+                }
+              } else {
+                u.data.group = k;
+              }
+              k++;
+            }
+          };
+
+      do {
+        gain = 0;
+        k = 0;
+        edgeProximityGraph.each(clean);
+        edgeProximityGraph.each(nodeMingle);
+        this.coalesceGraph();
+        totalGain += gain;
+      } while (gain > 0);
+    }
+  };
+
+  window.Bundler = Bundler;
+
+  return Bundler;
+
+})();
+

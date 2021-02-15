@@ -1,1 +1,1019 @@
-import*as I from"./web_modules/d3.js";import*as J from"./web_modules/d3-geo-projection.js";import*as x from"../../src/utils/xnet.js";import K from"./web_modules/nouislider.js";import"./web_modules/nouislider/distribute/nouislider.css.proxy.js";import"./customSliders.css.proxy.js";import*as j from"./utilities.js";import"./mingle/kdtree.js";import"./mingle/graph.js";import"./mingle/mingle.js";import"./web_modules/d3-geo-zoom.js";const f=Object.assign({},I,J);let L=a=>f.text(`https://raw.githubusercontent.com/1313e/CMasher/master/cmasher/colormaps/${a}/${a}_8bit.txt`).then(b=>f.dsvFormat(" ").parseRows(b,d=>f.rgb(d[0],d[1],d[2]))).then(b=>d=>b[Math.floor(d*(b.length-1e-7))]);const o={"research center":"#1f77b4",university:"#ff7f0e",college:"#2ca02c",other:"#d62728"};export class HeliosMap{constructor({elementID:a,projectName:b,mapColor:d="#B1C3B6",projectColor:e=CC006B,projection:c=f.geoRobinson().rotate([-10,0])}){this.projectName=b,this.mapColor=d,this.projectColor=e,this.element=document.getElementById(a),this.element.innerHTML="",this.element.classList.add("scaffold"),this.plotView=document.createElement("div"),this.plotView.classList.add("plotView"),this.element.appendChild(this.plotView),this.canvasElement=document.createElement("canvas"),this.plotView.appendChild(this.canvasElement),this.canvasElement.classList.add("edgesView"),this.context=this.canvasElement.getContext("2d"),this.nodesElement=document.createElementNS("http://www.w3.org/2000/svg","svg"),this.nodesElement.setAttributeNS("http://www.w3.org/2000/xmlns/","xmlns:xlink","http://www.w3.org/1999/xlink"),this.nodesElement.classList.add("nodesView"),this.plotView.appendChild(this.nodesElement),this.mapContext=this.context,this.loaderContainer=document.createElement("div"),this.loaderContainer.classList.add("loaderContainer"),this.loaderElement=document.createElement("div"),this.loaderElement.classList.add("loader"),this.loaderTextElement=document.createElement("div"),this.loaderTextElement.classList.add("loaderText"),this.loaderContainer.appendChild(this.loaderElement),this.loaderContainer.appendChild(this.loaderTextElement),this.element.appendChild(this.loaderContainer),this.buttonsPanelElement=document.createElement("div"),this.buttonsPanelElement.classList.add("buttonsPanel"),this.inputPanelElement=document.createElement("div"),this.inputPanelElement.classList.add("inputPanel"),this.sliderElement=document.createElement("div"),this.sliderElement.classList.add("timeSlider"),this.element.appendChild(this.buttonsPanelElement),this.buttonsPanelElement.appendChild(this.inputPanelElement),this.inputPanelElement.appendChild(this.sliderElement),this.globalLinks=!1,this.projection=c,this.geoPath=f.geoPath().projection(this.projection),this.geoPathCanvas=f.geoPath().projection(this.projection).context(this.mapContext),this.transform=new j.RegularTransform({x:0,y:0,k:1}),this.zoom=f.zoom().scaleExtent([1,100]).on("zoom",g=>{this.transform=new j.RegularTransform(g.transform),this.updateProjection(),this.update()}),f.select(this.canvasElement).call(this.zoom),f.select(this.nodesElement).call(this.zoom),this.initialize(),window.onresize=g=>{this.willResizeEvent(g)}}async initialize(){this.colormap=await L("amber"),this.countryData=await f.json("world-110m.geojson"),this.progressbar=f.select(this.loaderContainer),this.progresstext=f.select(this.loaderTextElement),this.progresstext.text("Loading data..."),this.linksPanel=f.select(this.nodesElement).append("g").classed("links",!0),this.nodesPanel=f.select(this.nodesElement).append("g").classed("nodes",!0),this.selectedNodes=new Set(),this.hoverNode=null,this.selectedView=f.select(this.nodesElement).append("g").selectAll(".nodesSelected");let a=await x.loadXNETFile(`data/institutions_${this.projectName}.xnet`);await this.setNetwork(a),await this.setupNodesView(),await this.willResizeEvent(0),this.timeSlider.on("update",async b=>{this.minYear=parseInt(b[0]),this.maxYear=parseInt(b[1]),await this.update()})}async updateProjection(){this.width=this.plotView.clientWidth,this.height=this.plotView.clientHeight,this.projection.fitExtent([[5,5],[this.width-5,this.height-5]],{type:"Sphere"});let a=this.projection.translate();this.projection.translate([this.transform.x+this.transform.k*a[0],this.transform.y+this.transform.k*a[1]]),this.projection.scale(this.projection.scale()*this.transform.k),this.zoom.translateExtent([[5,5],[this.width-5,this.height-5]])}async willResizeEvent(){this.linksPlotData=null;let a=this.plotView.clientWidth,b=this.plotView.clientHeight,d=window.devicePixelRatio||1,e=this.context.webkitBackingStorePixelRatio||this.context.mozBackingStorePixelRatio||this.context.msBackingStorePixelRatio||this.context.oBackingStorePixelRatio||this.context.backingStorePixelRatio||1;this.contextPixelRatio=d/e,this.canvasElement.style.width=a+"px",this.canvasElement.style.height=b+"px",this.nodesElement.setAttribute("height",""+b),this.nodesElement.setAttribute("width",""+a),this.canvasElement.width=this.contextPixelRatio*this.plotView.clientWidth,this.canvasElement.height=this.contextPixelRatio*this.plotView.clientHeight,this.context.setTransform(1,0,0,1,0,0),this.context.scale(this.contextPixelRatio,this.contextPixelRatio),this.previousGlobalLink=!1,this.updateProjection(),this.update()}async updateBackground(){this.mapContext.save(),this.mapContext.strokeStyle="#dddddd",this.mapContext.fillStyle="#f9fcff",this.mapContext.beginPath(),this.geoPathCanvas({type:"Sphere"}),this.mapContext.fill(),this.mapContext.stroke(),this.mapContext.strokeStyle="#dddddd",this.mapContext.fillStyle=this.mapColor,this.mapContext.beginPath(),this.geoPathCanvas(this.countryData),this.mapContext.fill(),this.mapContext.stroke(),this.mapContext.restore()}async update(){this.yearsSet=new Set(Array.from({length:this.maxYear-this.minYear+1},(a,b)=>b+this.minYear)),await this.updateNodesPositions(),await this.updateNodesView(),await this.updateSelectedNodes(!0),this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height),await this.updateBackground(),this.renderLinks(),(!this.globalLinks||!this.previousGlobalLink)&&(this.progressbar.style("display",null),this.progresstext.text("Processing edges..."),this.timer&&clearTimeout(this.timer),this.timer=setTimeout(async()=>{this.previousGlobalLink=this.globalLinks,await this.setupLinks(),this.progressbar.style("display","none")},1e3))}async setNetwork(a){this.network=a,this.nodes=[],this.minYear=null,this.maxYear=null;let b=0;for(let e=0;e<this.network.nodesCount;e++){let c={},g=this.network.verticesProperties;for(const i in g)Object.hasOwnProperty.call(g,i)&&(c[i]=g[i][e]);c.size=Math.pow(c.Strength,.5),b=Math.max(b,c.size),c.id=e,c.visible=!0,c.Name.startsWith("Unlisted")?c.unlisted=!0:c.unlisted=!1;if(Object.hasOwnProperty.call(c,"years")){c.years=new Set(c.years.split(" ").map(i=>parseInt(i)));for(const i of c.years)this.minYear==null?this.minYear=i:this.minYear=Math.min(this.minYear,i),this.maxYear==null?this.maxYear=i:this.maxYear=Math.max(this.maxYear,i)}this.nodes.push(c)}this.nodes.forEach(e=>{e.size=e.size/b*8+2,e.Field in o?e.color=o[e.Field]:e.color=o.other}),this.minRangeYear=this.minYear,this.maxRangeYear=this.maxYear;let d={to:e=>""+Math.round(e)};this.timeSlider=K.create(this.sliderElement,{start:[this.minYear,this.maxYear],step:1,behaviour:"tap-drag",tooltips:[d,d],connect:!0,range:{min:this.minYear,max:this.maxYear},pips:{mode:"steps",density:3,format:d}}),this.yearColor=f.scaleSequential(this.colormap).domain([this.minRangeYear,this.minRangeYear+(this.maxRangeYear-this.minRangeYear)]),this.edgesYears=this.network.edgesProperties.years.map(e=>new Set(e.split(" ").map(c=>parseInt(c)))),this.legendsElement=j.legend({color:f.scaleSequential([this.minRangeYear,this.maxRangeYear],this.colormap),title:"First year of collaboration",tickFormat:"d"}),this.legendsCategories=document.createElement("div"),j.swatches({color:o,columns:null,element:this.legendsCategories,format:e=>e.charAt(0).toUpperCase()+e.slice(1)}),this.legendsPanel=document.createElement("div"),this.legendsPanel.classList.add("legendsView"),this.legendsPanel.appendChild(this.legendsCategories),this.legendsPanel.appendChild(this.legendsElement),this.element.appendChild(this.legendsPanel)}async setupNodesView(){let a=this.nodesPanel.selectAll(".node").data(this.nodes);a.exit().remove();let b=this,d=a.enter().append("circle").classed("node",!0).attr("r",0).attr("fill",e=>e.color).attr("stroke",e=>f.rgb(e.color).darker(.85)).attr("stroke-width","1.5px").on("mouseover",function(e,c){b.hoverNode=c,f.select(this).attr("r",c.size*1.25).attr("stroke",f.rgb(c.color).darker(1)).attr("stroke-width",3),b.updateSelectedNodes(),e.stopPropagation()}).on("mouseout",function(e,c){f.select(this).attr("r",g=>g.size).attr("stroke",g=>f.rgb(g.color).darker(.85)).attr("stroke-width",1.5),b.hoverNode=null,b.updateSelectedNodes(),e.stopPropagation()}).on("click",function(e,c){e.shiftKey||b.selectedNodes.clear(),b.selectedNodes.has(c.id)?(console.log("unselecting "+c.id),b.selectedNodes.delete(c.id)):(console.log("selecting "+c.id),b.selectedNodes.add(c.id)),b.updateSelectedNodes(),e.stopPropagation()});f.select(this.nodesElement).on("click",function(e,c){e.shiftKey||(b.selectedNodes.clear(),b.updateSelectedNodes())}),d.transition().duration(500).attr("r",e=>e.size),this.nodesView=d.merge(a)}async updateNodesView(){this.nodesView.attr("cx",a=>a.x).attr("cy",a=>a.y).style("display",a=>a.visible?null:"none")}async updateNodesPositions(){this.nodes.forEach(a=>{let b=this.projection(a.Position);a.x=b[0],a.y=b[1],a.x<0||a.y<0||a.x>this.width||a.y>this.height?a.outOfBounds=!0:a.outOfBounds=!1;let d=j.setIntersection(this.yearsSet,a.years);a.outOfBounds||a.unlisted||d.size==0?a.visible=!1:a.visible=!0})}async updateSelectedNodes(a=!1){let b=-10;if(!a){let d=Array.from(this.selectedNodes).map(g=>this.nodes[g]).filter(g=>g);this.hoverNode&&!this.selectedNodes.has(this.hoverNode.id)&&d.push(this.hoverNode),this.selectedView=this.selectedView.data(d),this.selectedView.exit().remove();let e=this.selectedView.enter().append("g").classed("nodesSelected",!0).classed("nointeraction",!0);e.append("path").attr("d",`M ${-b*1},${b+3} L ${0},${0} L ${+b*1},${b+3} z`);let c=e.append("g").attr("transform",(g,i)=>"translate("+0+","+b+")").classed("textbox",!0);c.append("text").classed("outline",!0),c.append("text").classed("name",!0),this.selectedView=e.merge(this.selectedView)}this.selectedView.attr("transform",(d,e)=>"translate("+d.x+","+d.y+")"),this.selectedView.select(".name").attr("fill",d=>f.rgb(d.color).darker(1)).attr("font-size","15px").attr("text-anchor","middle").text(d=>d.Name),this.selectedView.select(".outline").attr("fill","white").attr("stroke","white").attr("stroke-width",3).attr("font-size","15px").attr("text-anchor","middle").style("opacity",.9).text(d=>d.Name),this.selectedView.select("path").attr("fill",d=>f.rgb(d.color).darker(1)).attr("stroke","white").style("opacity",.9).attr("stroke-width",1)}async setupLinks(){let a=this.network.edgesProperties.year,b=this.network.weights.map(h=>1/h),d=this.network.weights.map(h=>h),e=this.network.edges,c=this.nodes,g=[],i=[];for(let h=0;h<e.length;h++){let k=e[h],l=k[0],m=k[1];if(!this.globalLinks&&!c[l].visible&&!c[m].visible)continue;let q=j.setIntersection(this.yearsSet,this.edgesYears[h]);q.size>0&&(!this.globalLinks&&(!c[l].visible||!c[m].visible)&&(b[h]*=4),g.push(h))}g.sort((h,k)=>b[h]-b[k]);if(g.length==0)return;g=g.slice(0,1e3);let t=[],z=f.extent(g.map(h=>d[h])),u=f.extent(d);g.forEach(h=>{let k=e[h],l=k[0],m=k[1],q=c[l],E=c[m],F=!this.globalLinks&&(!q.visible||!E.visible),r=d[h],G=a[h],s=f.color(this.yearColor(G));s.opacity=.1*r/u[1]+.1*r/z[1]+.05,F&&(s.opacity=.025);let H={id:`${l}:${m}`,name:`${l}:${m}`,data:{weight:(2+r/u[1]*2)*1,color:s.formatRgb(),edgeIndex:h,coords:[c[l].x,c[l].y,c[m].x,c[m].y]}};t.push(H)});let A=1,B=0,C="QuadraticSAVE",v=1,w=3,D=15,n=new Bundler();n.options.angleStrength=w,n.options.sort=null,n.setNodes(t),n.buildNearestNeighborGraph(D),n.MINGLE(),this.bundle=n,this.linksPlotData=[],n.graph.each(h=>{let k=h.unbundleEdges(v);Bundler.Graph["render"+C](this.linksPlotData,k,{margin:B,delta:v,angleStrength:w,curviness:A,scale:1})}),this.linkTransform=new j.RegularTransform({x:this.transform.x,y:this.transform.y,k:this.transform.k}),this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height),this.updateBackground(),this.renderLinks()}renderLinks(){if(this.linksPlotData){this.context.save();let a=1;this.context.translate(this.transform.x,this.transform.y),this.context.scale(this.transform.k,this.transform.k),a*=this.transform.k;if(this.linkTransform){let b=this.linkTransform.inverse();this.context.translate(b.x,b.y),this.context.scale(b.k,b.k),a*=b.k}this.linksPlotData.forEach(b=>{let d=b.edgeIndex,e=j.setIntersection(this.yearsSet,this.edgesYears[d]);if(e.size==0)return;this.context.strokeStyle=b.color,this.context.lineWidth=b.width/a,this.context.stroke(b.path)}),this.context.restore()}}renderLinksSVG(){if(this.linkTransform){let d=this.linkTransform.inverse();this.linksPanel.attr("transform",this.transform+" "+d)}else this.linksPanel.attr("transform",this.transform);let a=this.linksPanel.selectAll(".link").data(this.linksPlotData.filter(d=>{let e=d.edgeIndex,c=j.setIntersection(this.yearsSet,this.edgesYears[e]);return c.size==0?!1:!0}));a.exit().remove();let b=a.enter().append("path").classed("link",!0).attr("fill","none").attr("vector-effect","non-scaling-stroke");this.linksView=b.merge(a),this.linksView.attr("stroke",d=>d.color).attr("stroke-width",d=>d.width+"px").attr("d",d=>{let e=f.path();if(d.hasOwnProperty("moveTo")){let c=d.moveTo;e.moveTo(c[0],c[1])}if(d.hasOwnProperty("bezierCurveTo1")){let[c,g,i]=d.bezierCurveTo1;e.bezierCurveTo(c[0],c[1],g[0],g[1],i[0],i[1])}if(d.hasOwnProperty("lineTo")){let c=d.lineTo;e.lineTo(c[0],c[1])}if(d.hasOwnProperty("bezierCurveTo2")){let[c,g,i]=d.bezierCurveTo2;e.bezierCurveTo(c[0],c[1],g[0],g[1],i[0],i[1])}return e})}}let p={atlas:{name:"ATLAS",mapColor:"#B1C3B6",color:"#008758"},babar:{name:"BaBar",mapColor:"#BBB2B6",color:"#CC006B"},ligo:{name:"LIGO",mapColor:"#B1A58C",color:"#903C22"},icecube:{name:"IceCube",mapColor:"#AFB9C9",color:"#1E6099"}},M=["babar","atlas","ligo","icecube"];f.select("#selectionmenu").selectAll("a").data(M).enter().append("a").attr("href",a=>"#"+p[a].name).style("--color",a=>p[a].color).append("span").text(a=>p[a].name);function y(){let a=location.hash.substring(1).toLowerCase(),b=p[a];f.selectAll("#selectionmenu").selectAll("a").classed("selected",d=>d==a),window.heliosMap=new HeliosMap({elementID:"netviz",projectName:b.name,mapColor:b.mapColor,projectColor:b.color})}window.addEventListener("hashchange",y),f.select(".question").on("click",function(a,b){f.select("#helpscreen").style("display")=="none"?f.select("#helpscreen").style("display",null):f.select("#helpscreen").style("display","none")}),f.select("#helpscreen").on("click",function(a,b){f.select("#helpscreen").style("display","none")}),window.location.hash?y():window.location.hash="#ATLAS";
+import * as d3_base from "./web_modules/d3.js"
+import * as d3geo from "./web_modules/d3-geo-projection.js";
+import * as xnet from "./src/utils/xnet.js"
+import noUiSlider from './web_modules/nouislider.js';
+import './web_modules/nouislider/distribute/nouislider.css.proxy.js';
+import './customSliders.css.proxy.js';
+
+import * as utils from "./utilities.js"
+
+// import "./mingle/philogl.js"
+import "./mingle/kdtree.js"
+import "./mingle/graph.js"
+import "./mingle/mingle.js"
+
+import d3GeoZoom from './web_modules/d3-geo-zoom.js';
+
+const d3 = Object.assign({}, d3_base, d3geo)
+
+let lut = name =>
+	d3
+		.text(
+			`https://raw.githubusercontent.com/1313e/CMasher/master/cmasher/colormaps/${name}/${name}_8bit.txt`
+		)
+		.then(d => d3.dsvFormat(" ").parseRows(d, d => d3.rgb(d[0], d[1], d[2])))
+		.then(l => t => l[Math.floor(t * (l.length - 1e-7))])
+
+
+const institutionColors = {
+	"research center": "#1f77b4",
+	"university": "#ff7f0e",
+	"college": "#2ca02c",
+	"other": "#d62728",
+}
+
+export class HeliosMap {
+	constructor({
+		elementID,
+		projectName,
+		mapColor = '#B1C3B6',
+		projectColor = CC006B,
+		projection = d3.geoRobinson()//geoCylindricalEqualArea()
+			//  .parallel(37.5)
+			// .center([0,40])
+			.rotate([-10, 0]),
+		// nodes = {},
+		// edges = [],
+	}) {
+		this.projectName = projectName;
+		this.mapColor = mapColor;
+		this.projectColor = projectColor;
+		this.element = document.getElementById(elementID);
+		this.element.innerHTML = '';
+		this.element.classList.add('scaffold');
+		// this.mapElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+		// this.mapElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+		// this.mapElement.classList.add("mapView")
+		// this.element.appendChild(this.mapElement);
+
+		// this.mapElement = document.createElement("canvas");
+		// this.element.appendChild(this.mapElement);
+		// this.mapElement.classList.add("mapView")
+		// this.mapContext = this.mapElement.getContext('2d');
+		this.plotView = document.createElement("div");
+		this.plotView.classList.add("plotView")
+		this.element.appendChild(this.plotView);
+		this.canvasElement = document.createElement("canvas");
+		this.plotView.appendChild(this.canvasElement);
+		this.canvasElement.classList.add("edgesView")
+		this.context = this.canvasElement.getContext('2d');
+		this.nodesElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+		this.nodesElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+		this.nodesElement.classList.add("nodesView")
+		this.plotView.appendChild(this.nodesElement);
+		this.mapContext = this.context;
+
+		this.loaderContainer = document.createElement("div");
+		this.loaderContainer.classList.add("loaderContainer");
+		this.loaderElement = document.createElement("div");
+		this.loaderElement.classList.add("loader");
+		this.loaderTextElement = document.createElement("div");
+		this.loaderTextElement.classList.add("loaderText");
+		this.loaderContainer.appendChild(this.loaderElement);
+		this.loaderContainer.appendChild(this.loaderTextElement);
+		this.element.appendChild(this.loaderContainer);
+
+		this.buttonsPanelElement = document.createElement("div");
+		this.buttonsPanelElement.classList.add("buttonsPanel");
+		this.inputPanelElement = document.createElement("div");
+		this.inputPanelElement.classList.add("inputPanel");
+		this.sliderElement = document.createElement("div");
+		this.sliderElement.classList.add("timeSlider");
+
+		this.element.appendChild(this.buttonsPanelElement);
+		this.buttonsPanelElement.appendChild(this.inputPanelElement);
+		this.inputPanelElement.appendChild(this.sliderElement);
+		
+		// this.legendsElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+		// this.legendsElement.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:xlink", "http://www.w3.org/1999/xlink");
+		// this.legendsElement.classList.add("legendsView")
+		this.globalLinks = false;
+		this.projection = projection;
+		this.geoPath = d3.geoPath().projection(this.projection);
+		this.geoPathCanvas = d3.geoPath()
+			.projection(this.projection)
+			.context(this.mapContext);
+
+
+		this.transform = new utils.RegularTransform({ x: 0, y: 0, k: 1.0 });
+		this.zoom = d3.zoom()
+			.scaleExtent([1, 100])
+			.on('zoom', (event) => {
+				// console.log(event.transform);
+				this.transform = new utils.RegularTransform(event.transform);
+				this.updateProjection();
+				// this.projection;
+				// .translate([event.transform.x,event.transform.y])
+				// .scale(event.transform.k);
+				this.update()
+			});
+
+		d3.select(this.canvasElement).call(this.zoom);
+		d3.select(this.nodesElement).call(this.zoom);
+
+
+
+		// document.getElementById("timeSlider").addEventListener("change", (e)=>{
+		// 	console.log("macaco");
+		// 	console.log(e.values);
+		// });
+
+
+		this.initialize();
+		window.onresize = event => {
+			this.willResizeEvent(event);
+		};
+
+	}
+
+	async initialize() {
+		this.colormap = await lut("amber");
+		this.countryData = await d3.json("world-110m.geojson");
+		this.progressbar = d3.select(this.loaderContainer);
+		this.progresstext = d3.select(this.loaderTextElement);
+		this.progresstext.text("Loading data...");
+
+		// this.backgroundMapGroup = d3.select(this.mapElement)
+		// 	.append("g")
+		// 	.classed("worldMap", true)
+
+		// this.backgroundBorder = this.backgroundMapGroup.selectAll(".sphere")
+		// 	.data([{type: "Sphere"}]).enter().append("path")
+		// 	.classed("sphere",true)
+		// 	.style("fill", this.mapColor)
+		// 	.style("stroke", "#dddddd")
+		// 	.style("stroke-width", 1);
+
+		// this.backgroundMap = this.backgroundMapGroup.selectAll(".land")
+		// 	.data(this.countryData.features)
+		// 	.enter()
+		// 	.append("path")
+		// 	.classed("land",true)
+		// 	.attr("fill", "#B1C3B6")
+		// 	.attr("stroke", "#dddddd")
+		// 	.attr("stroke-width", 1.0);
+
+
+		this.linksPanel = d3.select(this.nodesElement)
+			.append("g")
+			.classed("links", true);
+
+
+
+		this.nodesPanel = d3.select(this.nodesElement)
+			.append("g")
+			.classed("nodes", true)
+
+
+		this.selectedNodes = new Set();
+		this.hoverNode = null;
+		this.selectedView = d3.select(this.nodesElement).append("g").selectAll(".nodesSelected");
+
+		let network = await xnet.loadXNETFile(`data/institutions_${this.projectName}.xnet`)
+		await this.setNetwork(network);
+		await this.setupNodesView();
+		await this.willResizeEvent(0);
+		this.timeSlider.on('update', async (values) => {
+			this.minYear = parseInt(values[0]);
+			this.maxYear = parseInt(values[1]);
+			await this.update();
+		});
+	}
+
+	async updateProjection() {
+		this.width = this.plotView.clientWidth;
+		this.height = this.plotView.clientHeight;
+		// let rot = this.projection.rotate();
+		// this.projection.rotate([rot[0],0]);
+		this.projection.fitExtent([[5, 5], [this.width - 5, this.height - 5]], { type: "Sphere" })
+		let currentCenter = this.projection.translate();
+		this.projection.translate([this.transform.x + this.transform.k * currentCenter[0], this.transform.y + this.transform.k * currentCenter[1]])
+		this.projection.scale(this.projection.scale() * this.transform.k)
+
+		// let tx = Math.min(0, Math.max(this.transform.x, width - width * this.transform.k)),
+		// let ty = Math.min(0, Math.max(this.transform.y, height - height * this.transform.k));
+		// then, update the zoom behavior's internal translation, so that
+		// it knows how to properly manipulate it on the next movement
+		this.zoom.translateExtent([[5, 5], [this.width - 5, this.height - 5]])
+	}
+
+	async willResizeEvent() {
+		this.linksPlotData = null;
+		let width = this.plotView.clientWidth;
+		let height = this.plotView.clientHeight;
+
+		let dpr = window.devicePixelRatio || 1;
+		let bsr = this.context.webkitBackingStorePixelRatio ||
+			this.context.mozBackingStorePixelRatio ||
+			this.context.msBackingStorePixelRatio ||
+			this.context.oBackingStorePixelRatio ||
+			this.context.backingStorePixelRatio || 1;
+		this.contextPixelRatio = dpr / bsr;
+
+		this.canvasElement.style.width = width + "px";
+		this.canvasElement.style.height = height + "px";
+		// this.svgElement.style.width = width+"px";
+		// this.svgElement.style.height = height+"px";
+		// this.mapElement.setAttribute('height', "" + height);
+		// this.mapElement.setAttribute('width', "" + width);
+		this.nodesElement.setAttribute('height', "" + height);
+		this.nodesElement.setAttribute('width', "" + width);
+		// this.svgElement.width = width+"px";
+		// this.svgElement.height = height+"px";
+		// this.svgElement.setAttribute('viewBox',`0 0 ${width} ${height}`);
+		this.canvasElement.width = this.contextPixelRatio * this.plotView.clientWidth;
+		this.canvasElement.height = this.contextPixelRatio * this.plotView.clientHeight;
+
+		this.context.setTransform(1, 0, 0, 1, 0, 0);
+		this.context.scale(this.contextPixelRatio, this.contextPixelRatio);
+
+		this.previousGlobalLink = false;
+
+
+		this.updateProjection();
+		this.update()
+	}
+
+	async updateBackground() {
+		// this.mapContext.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
+
+		// this.backgroundMap
+		// 	.attr("d", this.geoPath);
+		// this.backgroundBorder
+		// 	.attr("d", this.geoPath)
+
+		this.mapContext.save()
+		this.mapContext.strokeStyle = '#dddddd';
+		this.mapContext.fillStyle = "#f9fcff";
+		this.mapContext.beginPath();
+		this.geoPathCanvas({ type: "Sphere" })
+		this.mapContext.fill();
+		this.mapContext.stroke();
+
+		// this.context.lineWidth = 0.5;
+		this.mapContext.strokeStyle = '#dddddd';
+		this.mapContext.fillStyle = this.mapColor;
+		this.mapContext.beginPath();
+		this.geoPathCanvas(this.countryData)
+		this.mapContext.fill();
+		this.mapContext.stroke();
+
+
+
+		// 	.attr("fill", "#B1C3B6")
+		// 	.attr("stroke", "#dddddd"){type: "Sphere"}
+		// 	.style("fill", "#f9fcff")
+		// 	.style("stroke", "#dddddd")
+		this.mapContext.restore()
+	}
+
+	async update() {
+		this.yearsSet = new Set(Array.from({ length: this.maxYear - this.minYear + 1 }, (x, yearIndex) => yearIndex + this.minYear));
+
+		await this.updateNodesPositions();
+		await this.updateNodesView();
+		await this.updateSelectedNodes(true);
+
+		this.context.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+		await this.updateBackground();
+		this.renderLinks();
+		if (!this.globalLinks || !this.previousGlobalLink) {
+			this.progressbar.style("display", null);
+			this.progresstext.text("Processing edges...");
+			if (this.timer) {
+				clearTimeout(this.timer);
+			};
+			this.timer = setTimeout(async () => {
+				this.previousGlobalLink = this.globalLinks;
+				await this.setupLinks();
+				this.progressbar.style("display", "none");
+			}, 1000);
+		}
+		// requestAnimationFrame(()=>this.renderLinks());
+	}
+
+	async setNetwork(network) {
+
+		this.network = network;
+		this.nodes = [];
+		this.minYear = null;
+		this.maxYear = null;
+		let sizeMax = 0;
+		for (let nodeIndex = 0; nodeIndex < this.network.nodesCount; nodeIndex++) {
+			let node = {};
+			let networkProperties = this.network.verticesProperties;
+			for (const propertyName in networkProperties) {
+				if (Object.hasOwnProperty.call(networkProperties, propertyName)) {
+					node[propertyName] = networkProperties[propertyName][nodeIndex];
+				}
+			}
+
+			node.size = Math.pow(node["Strength"], 0.5);
+			sizeMax = Math.max(sizeMax, node.size)
+			node.id = nodeIndex;
+
+			node.visible = true;
+			if (node.Name.startsWith("Unlisted")) {
+				node.unlisted = true;
+			} else {
+				node.unlisted = false;
+			}
+
+			if (Object.hasOwnProperty.call(node, "years")) {
+				node["years"] = new Set(node["years"].split(" ").map(d => parseInt(d)));
+				for (const year of node["years"]) {
+					if (this.minYear == null) {
+						this.minYear = year;
+					} else {
+						this.minYear = Math.min(this.minYear, year)
+					}
+					if (this.maxYear == null) {
+						this.maxYear = year;
+					} else {
+						this.maxYear = Math.max(this.maxYear, year)
+					}
+				}
+			}
+
+
+
+			this.nodes.push(node);
+		}
+		this.nodes.forEach(node => {
+			node.size = node.size / sizeMax * 8 + 2;
+			if (node.Field in institutionColors) {
+				node.color = institutionColors[node.Field];
+			} else {
+				node.color = institutionColors["other"];
+			}
+		});
+
+
+		this.minRangeYear = this.minYear;
+		this.maxRangeYear = this.maxYear;
+
+		let intFormater = { to: d => ("" + Math.round(d)) };
+		this.timeSlider = noUiSlider.create(this.sliderElement, {
+			start: [this.minYear, this.maxYear],
+			step: 1,
+			behaviour: "tap-drag",
+			tooltips: [intFormater, intFormater],
+			connect: true,
+			range: {
+				'min': this.minYear,
+				'max': this.maxYear
+			},
+			pips: {
+				mode: 'steps',
+				density: 3,
+				format: intFormater
+			}
+		});
+
+		this.yearColor = d3.scaleSequential(this.colormap)
+			.domain([this.minRangeYear, this.minRangeYear + (this.maxRangeYear - this.minRangeYear)])
+
+
+		this.edgesYears = this.network.edgesProperties["years"]
+			.map(yearString => new Set(yearString.split(" ").map(d => parseInt(d))));
+
+
+		// color,
+		// title,
+		// tickSize = 6,
+		// width = 320,
+		// height = 44 + tickSize,
+		// marginTop = 18,
+		// marginRight = 0,
+		// marginBottom = 16 + tickSize,
+		// marginLeft = 0,
+		// ticks = width / 64,
+		// tickFormat,
+		// tickValues
+
+		this.legendsElement = utils.legend({
+			color: d3.scaleSequential([this.minRangeYear, this.maxRangeYear], this.colormap),
+			title: "First year of collaboration",
+			tickFormat: "d",
+		})
+
+		this.legendsCategories = document.createElement("div");
+		utils.swatches({
+			color:institutionColors,
+			columns:null,
+			element:this.legendsCategories,
+			format: (d=>d.charAt(0).toUpperCase() + d.slice(1)),
+			});
+
+		this.legendsPanel = document.createElement("div");
+		this.legendsPanel.classList.add("legendsView");
+
+		this.legendsPanel.appendChild(this.legendsCategories);
+		this.legendsPanel.appendChild(this.legendsElement);
+		this.element.appendChild(this.legendsPanel);
+		
+	}
+
+	async setupNodesView() {
+		let nodeElements = this.nodesPanel.selectAll(".node")
+			.data(this.nodes);
+		nodeElements.exit().remove()
+		let instance = this;
+		let newNodeElements = nodeElements
+			.enter()
+			.append("circle")
+			.classed("node", true)
+			.attr("r", 0)
+			.attr("fill", d => d.color)
+			.attr("stroke", d => d3.rgb(d.color).darker(0.85))
+			.attr("stroke-width", "1.5px")
+			.on("mouseover", function (event, d) {
+				instance.hoverNode = d;
+
+				d3.select(this).attr("r", d.size * 1.25)
+					.attr("stroke", d3.rgb(d.color).darker(1))
+					.attr("stroke-width", 3);
+				// hoverText.attr("fill", d.color)
+				// displayProperties.forEach((displayProperty,i)=>{
+				// // .text(`${displayProperty=="name"?d.name:d[displayProperty]}\n${d[displayProperty]}`);
+
+				// hoverText.append("tspan")
+				// .attr("dy","1.2em")
+				// .attr("x","0")
+				// .style("font-size",i==0?"15px":"13px")
+				// 	.text(`${displayProperty=="name"?d.name:d[displayProperty]}`);
+				// });
+				instance.updateSelectedNodes();
+				event.stopPropagation();
+			})
+			.on("mouseout", function (event, d) {
+				d3.select(this).attr("r", d => d.size)
+					.attr("stroke", d => d3.rgb(d.color).darker(0.85))
+					.attr("stroke-width", 1.5);
+				// hoverText.text(null).select("tspan").remove();
+				instance.hoverNode = null;
+				instance.updateSelectedNodes();
+				event.stopPropagation();
+			})
+			.on("click", function (event, d) {
+				if (!event.shiftKey) {
+					instance.selectedNodes.clear();
+				}
+				if (instance.selectedNodes.has(d.id)) {
+					console.log("unselecting " + d.id);
+					instance.selectedNodes.delete(d.id);
+				} else {
+					console.log("selecting " + d.id);
+					instance.selectedNodes.add(d.id);
+				}
+				instance.updateSelectedNodes();
+				event.stopPropagation();
+			})
+		d3.select(this.nodesElement).on("click", function (event, d) {
+			if (!event.shiftKey) {
+				instance.selectedNodes.clear();
+				instance.updateSelectedNodes();
+			}
+		});
+
+		newNodeElements.transition()
+			.duration(500)
+			.attr("r", d => d.size);
+
+		this.nodesView = newNodeElements
+			.merge(nodeElements);
+	}
+
+	async updateNodesView() {
+		this.nodesView
+			.attr("cx", d => d.x)
+			.attr("cy", d => d.y)
+			.style("display", d => d.visible ? null : "none");
+	}
+
+	async updateNodesPositions() {
+		this.nodes.forEach(node => {
+			let projectedXY = this.projection(node.Position);
+			node.x = projectedXY[0];
+			node.y = projectedXY[1];
+			if (node.x < 0 || node.y < 0 || node.x > this.width || node.y > this.height) {
+				node.outOfBounds = true;
+			} else {
+				node.outOfBounds = false;
+			}
+			let interSet = utils.setIntersection(this.yearsSet, node["years"])
+			if (node.outOfBounds || node.unlisted || interSet.size == 0) {
+				node.visible = false;
+			} else {
+				node.visible = true;
+			}
+		});
+	}
+
+	async updateSelectedNodes(justUpdate = false) {
+		let verticalOffset = -10;
+		if (!justUpdate) {
+			// console.log("updating...");
+			// console.log(Array.from(selectedNodes).map(d=>nodeByID[d]))
+			let selectedNodesArray = Array.from(this.selectedNodes).map(d => this.nodes[d]).filter(d => d)
+
+			if (this.hoverNode && !this.selectedNodes.has(this.hoverNode.id)) {
+				selectedNodesArray.push(this.hoverNode);
+			}
+
+			this.selectedView = this.selectedView.data(selectedNodesArray);
+			this.selectedView.exit().remove();
+			let selectedViewNew = this.selectedView.enter()
+				.append("g")
+				.classed("nodesSelected", true)
+				.classed("nointeraction", true);
+
+			selectedViewNew.append("path").attr("d",
+				`M ${-verticalOffset * 1},${verticalOffset + 3} L ${0},${0} L ${+verticalOffset * 1},${verticalOffset + 3} z`)
+			let textView = selectedViewNew.append("g")
+				.attr("transform", (d, i) => ("translate(" + 0 + "," + verticalOffset + ")"))
+				.classed("textbox", true);
+			textView.append("text").classed("outline", true);
+			textView.append("text").classed("name", true);
+			this.selectedView = selectedViewNew.merge(this.selectedView);
+
+		}
+		this.selectedView
+			.attr("transform", (d, i) => ("translate(" + d.x + "," + d.y + ")"));
+
+		this.selectedView.select(".name")
+			.attr("fill", d => d3.rgb(d.color).darker(1))
+			.attr("font-size", "15px")
+			.attr("text-anchor", "middle")
+			.text(d => d.Name);
+
+		this.selectedView.select(".outline")
+			.attr("fill", "white")
+			.attr("stroke", "white")
+			.attr("stroke-width", 3)
+			.attr("font-size", "15px")
+			.attr("text-anchor", "middle")
+			.style('opacity', 0.9)
+			.text(d => d.Name);
+
+		this.selectedView.select("path")
+			.attr("fill", d => d3.rgb(d.color).darker(1))
+			.attr("stroke", "white")
+			.style('opacity', 0.9)
+			.attr("stroke-width", 1)
+
+	}
+
+	async setupLinks() {
+		let minYears = this.network.edgesProperties["year"];
+		// let pvalues = this.network.edgesProperties["alpha_ij"].map(d=>d);
+		let pvalues = this.network.weights.map(d => 1.0 / d);
+
+		let weights = this.network.weights.map(d => d);
+
+		let edges = this.network.edges;
+		let nodes = this.nodes;
+
+		let edgesIndices = [];
+		let outgoing = [];
+
+		for (let edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+			let edge = edges[edgeIndex];
+			let fromIndex = edge[0];
+			let toIndex = edge[1];
+			if (!this.globalLinks && !nodes[fromIndex].visible && !nodes[toIndex].visible) {
+				continue;
+			}
+			let interSet = utils.setIntersection(this.yearsSet, this.edgesYears[edgeIndex])
+			if (interSet.size > 0) {
+				if (!this.globalLinks && (!nodes[fromIndex].visible || !nodes[toIndex].visible)) {
+					pvalues[edgeIndex] *= 4;
+				}
+				edgesIndices.push(edgeIndex);
+			}
+		}
+
+		edgesIndices.sort((firstIndex, secondIndex) => pvalues[firstIndex] - pvalues[secondIndex])
+		// edgesIndices.sort((firstIndex,secondIndex)=>-weights[firstIndex]+weights[secondIndex])
+
+
+		if (edgesIndices.length == 0) {
+			return;
+		}
+
+		edgesIndices = edgesIndices.slice(0, 1000);
+
+		let edgeBundlingData = [];
+
+		let weightMinMax = d3.extent(edgesIndices.map(i => weights[i]))
+
+		let weightMinMaxGlobal = d3.extent(weights)
+
+		edgesIndices.forEach((index) => {
+			let edge = edges[index]
+			let fromIndex = edge[0];
+			let toIndex = edge[1];
+			let fromNode = nodes[fromIndex];
+			let toNode = nodes[toIndex];
+			let partialOpacity = !this.globalLinks && (!fromNode.visible || !toNode.visible);
+
+			let weight = weights[index];
+			let minYear = minYears[index];
+			let c = d3.color(this.yearColor(minYear))
+			c.opacity = 0.10 * weight / weightMinMaxGlobal[1] + 0.10 * weight / weightMinMax[1] + 0.05;
+			// c.opacity=1.0;
+			if (partialOpacity) {
+				c.opacity = 0.025;
+			}
+			let entry = {
+				id: `${fromIndex}:${toIndex}`,
+				name: `${fromIndex}:${toIndex}`,
+				data: {
+					weight: (2 + weight / weightMinMaxGlobal[1] * 2) * 1.0, //For quadratic use *0.25
+					color: c.formatRgb(),
+					edgeIndex: index,
+					// alpha:0.1,
+					coords: [
+						nodes[fromIndex].x,
+						nodes[fromIndex].y,
+						nodes[toIndex].x,
+						nodes[toIndex].y,
+					]
+				}
+			}
+			edgeBundlingData.push(entry);
+		});
+
+		let curviness = 1.0;
+		let margin = 0.0;
+		// let type = 'BezierSAVE';
+		let type = 'QuadraticSAVE';
+		let delta = 1.0;
+		let angleStrength = 3;
+		let neighbors = 15;
+		let bundle = new Bundler();
+
+		bundle.options.angleStrength = angleStrength;
+		bundle.options.sort = null;
+
+		bundle.setNodes(edgeBundlingData);
+		bundle.buildNearestNeighborGraph(neighbors);
+		bundle.MINGLE();
+
+		this.bundle = bundle;
+		this.linksPlotData = [];
+		bundle.graph.each((node) => {
+			let theEdges = node.unbundleEdges(delta);
+			Bundler.Graph['render' + type](this.linksPlotData, theEdges, {
+				margin: margin,
+				delta: delta,
+				angleStrength: angleStrength,
+				curviness: curviness,
+				scale: 1.0,
+			});
+		})
+
+		this.linkTransform = new utils.RegularTransform({
+			x: this.transform.x,
+			y: this.transform.y,
+			k: this.transform.k
+		});
+
+		// const performAnimation = () => {
+		// 	this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
+		// 	request = requestAnimationFrame(performAnimation);
+		// 	updateBundle();
+		// }
+
+		// updateBundle();
+		this.context.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+		this.updateBackground();
+		this.renderLinks();
+
+		// console.log(this.linksPlotData);
+		// requestAnimationFrame(performAnimation);
+		// console.log(context.toString())
+		// this.linksView.setAttribute("d", context.toString());
+
+		//...
+
+		// cancelAnimationFrame(request)
+
+	}
+
+	// renderLinks(){
+	// 	if(this.linksPlotData){
+	// 		this.context.save();
+	// 		let totalScale = 1.0;
+	// 		this.context.translate(this.transform.x, this.transform.y);
+	// 		this.context.scale(this.transform.k, this.transform.k);
+
+	// 		totalScale*=this.transform.k;
+
+	// 		if(this.linkTransform){
+	// 			let inverseTransform = this.linkTransform.inverse();
+	// 			this.context.translate(inverseTransform.x, inverseTransform.y);
+	// 			this.context.scale(inverseTransform.k, inverseTransform.k);
+	// 			totalScale*=inverseTransform.k;
+	// 		}
+
+	// 		this.linksPlotData.forEach(entry => {
+	// 			let edgeIndex = entry.edgeIndex;
+	// 			let interSet = utils.setIntersection(this.yearsSet,this.edgesYears[edgeIndex])
+	// 			if(interSet.size==0 ){
+	// 				return;
+	// 			}
+	// 			this.context.strokeStyle = entry.color;
+	// 			this.context.lineWidth = entry.width/totalScale;
+	// 			this.context.beginPath();
+	// 			if(entry.hasOwnProperty("moveTo")){
+	// 				let start = entry.moveTo;
+	// 				this.context.moveTo(start[0], start[1]);
+	// 			}
+	// 			if(entry.hasOwnProperty("bezierCurveTo1")){
+	// 				let [c1,c2,end] = entry.bezierCurveTo1;
+	// 				// this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// 			}
+	// 			if(entry.hasOwnProperty("lineTo")){
+	// 				let start = entry.lineTo;
+	// 				this.context.lineTo(start[0], start[1]);
+	// 			}
+	// 			if(entry.hasOwnProperty("bezierCurveTo2")){
+	// 				let [c1,c2,end] = entry.bezierCurveTo2;
+	// 				this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// 			}
+	// 			this.context.stroke();
+	// 			if(entry.shallClose){
+	// 				this.context.closePath();
+	// 			}
+	// 		});
+	// 		this.context.restore();
+	// 	}
+
+	// // ctx.moveTo(start[0], start[1]);
+	// // ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// // ctx.lineTo(start[0], start[1]);
+	// // ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	// }
+
+	// renderLinksALT(){
+	// 	if(this.bundle){
+	// 		console.log("Drawing...")
+	// 		this.context.save();
+	// 		let totalScale = 1.0;
+	// 		this.context.translate(this.transform.x, this.transform.y);
+	// 		this.context.scale(this.transform.k, this.transform.k);
+
+	// 		totalScale*=this.transform.k;
+
+	// 		if(this.linkTransform){
+	// 			let inverseTransform = this.linkTransform.inverse();
+	// 			this.context.translate(inverseTransform.x, inverseTransform.y);
+	// 			this.context.scale(inverseTransform.k, inverseTransform.k);
+	// 			totalScale*=inverseTransform.k;
+	// 		}
+
+	// 		let curviness = 1.0;
+	// 		let margin = 0.0;
+	// 		// let type = 'BezierSAVE';
+	// 		let type = 'Bezier';
+	// 		let delta = 1.0;
+	// 		let angleStrength = 3;
+	// 		this.linksPlotData = [];
+	// 		this.bundle.graph.each((node)=>{
+	// 			let theEdges = node.unbundleEdges(delta);
+	// 			Bundler.Graph['render' + type](this.context, theEdges, {
+	// 				margin: margin,
+	// 				delta: delta,
+	// 				angleStrength:angleStrength,
+	// 				curviness: curviness,
+	// 				scale: 1.0,
+	// 			});
+	// 		});
+	// 		this.context.restore();
+	// 	}
+	// }
+	renderLinks() {
+		// this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
+
+		if (this.linksPlotData) {
+			this.context.save();
+			let totalScale = 1.0;
+			this.context.translate(this.transform.x, this.transform.y);
+			this.context.scale(this.transform.k, this.transform.k);
+
+			totalScale *= this.transform.k;
+
+			if (this.linkTransform) {
+				let inverseTransform = this.linkTransform.inverse();
+				this.context.translate(inverseTransform.x, inverseTransform.y);
+				this.context.scale(inverseTransform.k, inverseTransform.k);
+				totalScale *= inverseTransform.k;
+			}
+
+			this.linksPlotData.forEach(entry => {
+				let edgeIndex = entry.edgeIndex;
+				let interSet = utils.setIntersection(this.yearsSet, this.edgesYears[edgeIndex])
+				if (interSet.size == 0) {
+					return;
+				}
+				this.context.strokeStyle = entry.color;
+				this.context.lineWidth = entry.width / totalScale;
+				this.context.stroke(entry.path);
+			});
+			this.context.restore();
+		}
+
+		// ctx.moveTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// ctx.lineTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	}
+
+	renderLinksSVG() {
+		if (this.linkTransform) {
+			let inverseTransform = this.linkTransform.inverse();
+			this.linksPanel.attr("transform", this.transform + " " + inverseTransform);
+		} else {
+			this.linksPanel.attr("transform", this.transform)
+		}
+		let linkElements = this.linksPanel.selectAll(".link")
+			.data(this.linksPlotData.filter(entry => {
+				let edgeIndex = entry.edgeIndex;
+				let interSet = utils.setIntersection(this.yearsSet, this.edgesYears[edgeIndex])
+				if (interSet.size == 0) {
+					return false;
+				} else {
+					return true;
+				}
+			}));
+
+		linkElements.exit().remove();
+
+		let newLinkElements = linkElements
+			.enter()
+			.append("path")
+			.classed("link", true)
+			.attr("fill", "none")
+			.attr("vector-effect", "non-scaling-stroke")
+
+		// newLinkElements.transition()
+		// 	.duration(500)
+		// 	.attr("r", d => d.size);
+
+		this.linksView = newLinkElements
+			.merge(linkElements);
+
+		this.linksView
+			.attr("stroke", d => d.color)
+			.attr("stroke-width", d => d.width + "px")
+			.attr("d", entry => {
+				let context = d3.path();
+				if (entry.hasOwnProperty("moveTo")) {
+					let start = entry.moveTo;
+					context.moveTo(start[0], start[1]);
+				}
+				if (entry.hasOwnProperty("bezierCurveTo1")) {
+					let [c1, c2, end] = entry.bezierCurveTo1;
+					context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+				}
+				if (entry.hasOwnProperty("lineTo")) {
+					let start = entry.lineTo;
+					context.lineTo(start[0], start[1]);
+				}
+				if (entry.hasOwnProperty("bezierCurveTo2")) {
+					let [c1, c2, end] = entry.bezierCurveTo2;
+					context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+				}
+				// if(entry.shallClose){
+				// 	context.closePath();
+				// }
+				return context;
+			});
+
+		// this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
+		// if(this.linksPlotData){
+		// 	this.context.clearRect(0,0,this.canvasElement.width,this.canvasElement.height);
+		// 	this.linksPlotData.forEach(entry => {
+		// 		let edgeIndex = entry.edgeIndex;
+		// 		let interSet = setUtils.intersection(this.yearsSet,this.edgesYears[edgeIndex])
+		// 		if(interSet.size==0 ){
+		// 			return;
+		// 		}
+		// 		this.context.strokeStyle = entry.color;
+		// 		this.context.lineWidth = entry.width;
+		// 		this.context.beginPath();
+		// 		if(entry.hasOwnProperty("moveTo")){
+		// 			let start = entry.moveTo;
+		// 			this.context.moveTo(start[0], start[1]);
+		// 		}
+		// 		if(entry.hasOwnProperty("bezierCurveTo1")){
+		// 			let [c1,c2,end] = entry.bezierCurveTo1;
+		// 			this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// 		}
+		// 		if(entry.hasOwnProperty("lineTo")){
+		// 			let start = entry.lineTo;
+		// 			this.context.lineTo(start[0], start[1]);
+		// 		}
+		// 		if(entry.hasOwnProperty("bezierCurveTo2")){
+		// 			let [c1,c2,end] = entry.bezierCurveTo2;
+		// 			this.context.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// 		}
+		// 		this.context.stroke();
+		// 		this.context.closePath();
+		// 	});
+		// }
+
+		// ctx.moveTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+		// ctx.lineTo(start[0], start[1]);
+		// ctx.bezierCurveTo(c1[0], c1[1], c2[0], c2[1], end[0], end[1]);
+	}
+}
+
+
+let projectToData = {
+	"atlas":{
+		name:"ATLAS",
+		mapColor:"#B1C3B6",
+		color:"#008758"
+	},
+	"babar":{
+		name:"BaBar",
+		mapColor:"#BBB2B6",
+		color:"#CC006B"
+	},
+	"ligo":{
+		name:"LIGO",
+		mapColor:"#B1A58C",
+		color:"#903C22"
+	},
+	"icecube":{
+		name:"IceCube",
+		mapColor:"#AFB9C9",
+		color:"#1E6099"
+	},
+}
+
+let projectsOrder = ["babar","atlas","ligo","icecube"];
+
+d3.select("#selectionmenu")
+	.selectAll("a")
+	.data(projectsOrder)
+	.enter()
+	.append("a")
+	.attr("href",d=>"#"+projectToData[d].name)
+	.style("--color",d=>projectToData[d].color)
+	.append("span")
+	.text(d=>projectToData[d].name);
+
+
+function locationHashChanged() {
+	let projectCode = location.hash.substring(1).toLowerCase();
+	let projectData = projectToData[projectCode];
+	d3.selectAll("#selectionmenu")
+	.selectAll("a")
+	.classed("selected",d=>d==projectCode);
+	
+	window.heliosMap = new HeliosMap({
+		elementID: "netviz",
+		projectName: projectData.name,
+		mapColor: projectData.mapColor,
+		projectColor: projectData.color
+	});
+}
+
+window.addEventListener('hashchange', locationHashChanged);
+
+d3.select(".question").on("click", function(event, d) {
+	if(d3.select("#helpscreen").style("display")=="none"){
+		d3.select("#helpscreen").style("display",null);
+	}else{
+		d3.select("#helpscreen").style("display","none");
+	}
+});
+d3.select("#helpscreen").on("click", function(event, d) {
+	d3.select("#helpscreen").style("display","none");
+	
+});
+if(!window.location.hash){
+	window.location.hash = "#ATLAS";
+}else{
+	locationHashChanged();
+}
+
+
+
+
+
+

@@ -1,7 +1,240 @@
-"use strict";let k=a=>{let b=a.split(/\s/);return b.length<2?null:[+b[0],+b[1]]},l=a=>{let b=a.split(/\s/);return b.length<3?null:[+b[0],+b[1],+b[2]]},m=a=>isNaN(a)?0:+a,n=/#([ve]) \"(.+)\" ([sn]|v2|v3)/,o={s:String,n:m,v2:k,v3:l},p=a=>{for(;a.lineIndex+1<a.lines.length&&a.lines[a.lineIndex].length==0;)a.lineIndex++;let b=a.lines[a.lineIndex],c=b.split(/\s/),d=0;if(c.length==0||c[0].toLowerCase()!="#vertices"||isNaN(c[1])||!Number.isInteger(+c[1]))throw`Malformed xnet data (Reading Vertices Header)[line: ${a.lineIndex}]
-	> ${a.lines[a.lineIndex]}`;return d=+c[1],a.lineIndex++,d},q=a=>{let b=[];for(;a.lineIndex<a.lines.length;){let d=a.lines[a.lineIndex],e=d.length;if(e==0){a.lineIndex++;continue}if(d[0]=="#")break;var c=d;d[0]=='"'&&d[e-1]=='"'&&(c=d.slice(1,-1)),b.push(c),a.lineIndex++}return b},r=a=>{for(;a.lineIndex+1<a.lines.length&&a.lines[a.lineIndex].length==0;)a.lineIndex++;let b=a.lines[a.lineIndex],c=b.split(/\s/),d=!1,e=!1;if(c.length==0||c[0].toLowerCase()!="#edges")throw`Malformed xnet data (Reading Edges Header)[line: ${a.lineIndex}]
-	> ${a.lines[a.lineIndex]}`;return c.forEach(f=>{f.toLowerCase()=="weighted"&&(d=!0),f.toLowerCase()=="nonweighted"&&(d=!1),f.toLowerCase()=="directed"&&(e=!0),f.toLowerCase()=="undirected"&&(e=!1)}),a.lineIndex++,{weighted:d,directed:e}},s=a=>{let b=[],c=[];for(;a.lineIndex<a.lines.length;){let d=a.lines[a.lineIndex],e=d.length;if(e==0){a.lineIndex++;continue}if(d[0]=="#")break;let f=d.split(/\s/),g=1;if(f.length<2)throw`Malformed xnet data (Reading Edges)[line: ${a.lineIndex}]
-	> ${a.lines[a.lineIndex]}`;f.length>2&&(g=+f[2]),b.push([+f[0],+f[1]]),c.push(g),a.lineIndex++}return{edges:b,weights:c}},t=a=>{for(;a.lineIndex+1<a.lines.length&&a.lines[a.lineIndex].length==0;)a.lineIndex++;let b=n.exec(a.lines[a.lineIndex]);if(b.length!=4)throw`Malformed xnet data [line: ${a.lineIndex}]
-	> ${a.lines[a.lineIndex]}`;let c=b[1],d=b[2],e=b[3];return a.lineIndex++,{type:c,name:d,format:e}},u=(a,b)=>{let c=[],d=o[b.format];for(;a.lineIndex<a.lines.length;){let e=a.lines[a.lineIndex],f=e.length;if(f==0){a.lineIndex++;continue}if(e[0]=="#")break;let g=e;g[0]=='"'&&g[f-1]=='"'&&(g=g.slice(1,-1)),c.push(d(g)),a.lineIndex++}return c},j=a=>{let b={lineIndex:0,lines:a.split(`
-`)},c=p(b),d=q(b),e={nodesCount:c,verticesProperties:{},edgesProperties:{}};if(d.length>0){if(d.length<c)throw`Malformed xnet data [line: ${b.lineIndex}]
-	> ${b.lines[b.lineIndex]}`;e.names=d}let f=r(b);e.directed=f.directed,e.weighted=f.weighted;let g=s(b);e.edges=g.edges,e.weighted&&(e.weights=g.weights);do{for(;b.lineIndex<b.lines.length&&b.lines[b.lineIndex].length==0;)b.lineIndex++;if(!(b.lineIndex<b.lines.length))break;let h=t(b),i=u(b,h);h.type=="e"?e.edgesProperties[h.name]=i:h.type=="v"&&(e.verticesProperties[h.name]=i)}while(b.lineIndex<b.lines.length);return e};async function v(a){let b=await fetch(a).then(c=>c.text());return j(b)}export{j as loadXNET,v as loadXNETFile};
+"use strict";
+
+let textSplit2 = (text) => {
+	let entries = text.split(/\s/)
+	if (entries.length < 2) {
+		return null;
+	}
+	return [+entries[0], +entries[1]];
+};
+
+let textSplit3 = (text) => {
+	let entries = text.split(/\s/)
+	if (entries.length < 3) {
+		return null;
+	}
+	return [+entries[0], +entries[1], +entries[2]];
+};
+
+let readNumberIgnoringNone = (text) => {
+	if (isNaN(text)) {
+		return 0.0;
+	} else {
+		return +text;
+	}
+};
+
+
+let propertyHeaderRegular = /#([ve]) \"(.+)\" ([sn]|v2|v3)/;
+let propertyFunctions = {
+	"s": String,
+	"n": readNumberIgnoringNone,
+	"v2": textSplit2,
+	"v3": textSplit3
+};
+
+
+
+let readXNETVerticesHeader = (status) => {
+	while (status.lineIndex + 1 < status.lines.length && status.lines[status.lineIndex].length == 0) {
+		status.lineIndex++;
+	}
+
+	let headerLine = status.lines[status.lineIndex];
+	let headerEntries = headerLine.split(/\s/);
+	let nodeCount = 0;
+	
+	if (headerEntries.length == 0 || headerEntries[0].toLowerCase() != "#vertices" ||
+		isNaN(headerEntries[1]) || !Number.isInteger(+headerEntries[1])) {
+		throw `Malformed xnet data (Reading Vertices Header)[line: ${status.lineIndex}]\n\t> ${status.lines[status.lineIndex]}`;
+	}
+	nodeCount = +headerEntries[1];
+	status.lineIndex++;
+	return nodeCount;
+};
+
+let readXNETNames = (status) => {
+	let names = [];
+	while (status.lineIndex < status.lines.length) {
+		let currentLine = status.lines[status.lineIndex];
+		let lineLength = currentLine.length;
+		if (lineLength == 0) {
+			status.lineIndex++;
+			continue;
+		}
+		if (currentLine[0] == "#") {
+			break;
+		}
+		var name = currentLine;
+		if (currentLine[0] == "\"" && currentLine[lineLength - 1] == "\"") {
+			name = currentLine.slice(1, -1);
+		}
+		names.push(name);
+		status.lineIndex++;
+	}
+	return names;
+};
+
+let readXNETEdgesHeader = (status) => {
+	while (status.lineIndex + 1 < status.lines.length && status.lines[status.lineIndex].length == 0) {
+		status.lineIndex++;
+	}
+
+	let headerLine = status.lines[status.lineIndex];
+	let headerEntries = headerLine.split(/\s/);
+
+	let weighted = false;
+	let directed = false;
+
+	if (headerEntries.length == 0 || headerEntries[0].toLowerCase() != "#edges") {
+		throw `Malformed xnet data (Reading Edges Header)[line: ${status.lineIndex}]\n\t> ${status.lines[status.lineIndex]}`;
+	}
+
+	headerEntries.forEach(headerEntry => {
+		if (headerEntry.toLowerCase() == "weighted") {
+			weighted = true;
+		}
+		if (headerEntry.toLowerCase() == "nonweighted") {
+			weighted = false;
+		}
+		if (headerEntry.toLowerCase() == "directed") {
+			directed = true;
+		}
+		if (headerEntry.toLowerCase() == "undirected") {
+			directed = false;
+		}
+	});
+	status.lineIndex++;
+	return { weighted: weighted, directed: directed };
+};
+
+
+let readXNETEdges = (status) => {
+	let edges = [];
+	let weights = [];
+	while (status.lineIndex < status.lines.length) {
+		let currentLine = status.lines[status.lineIndex];
+		let lineLength = currentLine.length;
+		if (lineLength == 0) {
+			status.lineIndex++;
+			continue;
+		}
+		if (currentLine[0] == "#") {
+			break;
+		}
+		let entries = currentLine.split(/\s/);
+		let weight = 1.0;
+		
+		if (entries.length < 2) {
+			throw `Malformed xnet data (Reading Edges)[line: ${status.lineIndex}]\n\t> ${status.lines[status.lineIndex]}`;
+		}
+		if (entries.length > 2) {
+			weight = +entries[2];
+		}
+		edges.push([+entries[0], +entries[1]]);
+		weights.push(weight);
+		status.lineIndex++;
+	}
+	return { edges: edges, weights: weights };
+};
+
+
+let readXNETPropertyHeader = (status) => {
+	while (status.lineIndex + 1 < status.lines.length && status.lines[status.lineIndex].length == 0) {
+		status.lineIndex++;
+	}
+
+	let headerEntries = propertyHeaderRegular.exec(status.lines[status.lineIndex]);
+
+	if (headerEntries.length != 4) {
+		throw `Malformed xnet data [line: ${status.lineIndex}]\n\t> ${status.lines[status.lineIndex]}`;
+	}
+	let propertyType = headerEntries[1];
+	let propertyName = headerEntries[2];
+	let propertyFormat = headerEntries[3];
+
+	status.lineIndex++;
+
+	return { type: propertyType, name: propertyName, format: propertyFormat };
+};
+
+
+
+let readXNETProperty = (status, propertyHeader) => {
+	let properties = [];
+	let propertyFunction = propertyFunctions[propertyHeader.format];
+	while (status.lineIndex < status.lines.length) {
+		let currentLine = status.lines[status.lineIndex];
+		let lineLength = currentLine.length;
+		if (lineLength == 0) {
+			status.lineIndex++;
+			continue;
+		}
+		if (currentLine[0] == "#") {
+			break;
+		}
+		let value = currentLine;
+		if (value[0] == "\"" && value[lineLength - 1] == "\"") {
+			value = value.slice(1, -1);
+		}
+		properties.push(propertyFunction(value));
+		status.lineIndex++;
+	}
+	return properties;
+};
+
+
+
+let loadXNET = (data) => {
+	let status = { lineIndex:0, lines: data.split("\n") };
+	let nodesCount = readXNETVerticesHeader(status);
+	let names = readXNETNames(status);
+
+	let network = { nodesCount: nodesCount, verticesProperties: {}, edgesProperties: {} }
+
+	if (names.length > 0) {
+		if (names.length < nodesCount) {
+			throw `Malformed xnet data [line: ${status.lineIndex}]\n\t> ${status.lines[status.lineIndex]}`;
+		} else {
+			network.names = names;
+		}
+	}
+	let edgesHeader = readXNETEdgesHeader(status);
+	network.directed = edgesHeader.directed;
+	network.weighted = edgesHeader.weighted;
+
+	let edgesData = readXNETEdges(status);
+	network.edges = edgesData.edges;
+	if (network.weighted) {
+		network.weights = edgesData.weights;
+	}
+
+	do{
+		while (status.lineIndex < status.lines.length && status.lines[status.lineIndex].length == 0) {
+			status.lineIndex++;
+		}
+		if(!(status.lineIndex < status.lines.length)){
+			break;
+		}
+		let propertyHeader = readXNETPropertyHeader(status);
+		let propertyData = readXNETProperty(status, propertyHeader);
+		//console.log(propertyHeader);
+		if (propertyHeader.type == "e") {
+			network.edgesProperties[propertyHeader.name] = propertyData;
+		} else if (propertyHeader.type == "v") {
+			network.verticesProperties[propertyHeader.name] = propertyData;
+		}
+		// status.lineIndex++;
+	}while (status.lineIndex < status.lines.length);
+	return network;
+};
+
+
+async function loadXNETFile(networkFile){
+	let networkData = await fetch(networkFile)
+		.then(response => response.text());
+		// .then();
+	return loadXNET(networkData);
+}
+
+export {loadXNET,loadXNETFile}

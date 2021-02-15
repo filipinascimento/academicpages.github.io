@@ -1,2 +1,262 @@
-import*as d from"./web_modules/d3.js";function w({color:a,title:e,tickSize:b=6,width:c=320,height:f=44+b,marginTop:j=18,marginRight:m=0,marginBottom:i=16+b,marginLeft:l=0,ticks:s=c/64,tickFormat:h,tickValues:p}={}){const o=d.create("svg").attr("width",c).attr("height",f).attr("viewBox",[0,0,c,f]).style("overflow","visible").style("display","block");let t=g=>g.selectAll(".tick line").attr("y1",j+i-f),k;if(a.interpolate){const g=Math.min(a.domain().length,a.range().length);k=a.copy().rangeRound(d.quantize(d.interpolate(l,c-m),g)),o.append("image").attr("x",l).attr("y",j).attr("width",c-l-m).attr("height",f-j-i).attr("preserveAspectRatio","none").attr("xlink:href",v(a.copy().domain(d.quantize(d.interpolate(0,1),g))).toDataURL())}else if(a.interpolator){k=Object.assign(a.copy().interpolator(d.interpolateRound(l,c-m)),{range(){return[l,c-m]}}),o.append("image").attr("x",l).attr("y",j).attr("width",c-l-m).attr("height",f-j-i).attr("preserveAspectRatio","none").attr("xlink:href",v(a.interpolator()).toDataURL());if(!k.ticks){if(p===void 0){const g=Math.round(s+1);p=d.range(g).map(r=>d.quantile(a.domain(),r/(g-1)))}typeof h!=="function"&&(h=d.format(h===void 0?",f":h))}}else if(a.invertExtent){const g=a.thresholds?a.thresholds():a.quantiles?a.quantiles():a.domain(),r=h===void 0?n=>n:typeof h==="string"?d.format(h):h;k=d.scaleLinear().domain([-1,a.range().length-1]).rangeRound([l,c-m]),o.append("g").selectAll("rect").data(a.range()).join("rect").attr("x",(n,q)=>k(q-1)).attr("y",j).attr("width",(n,q)=>k(q)-k(q-1)).attr("height",f-j-i).attr("fill",n=>n),p=d.range(g.length),h=n=>r(g[n],n)}else k=d.scaleBand().domain(a.domain()).rangeRound([l,c-m]),o.append("g").selectAll("rect").data(a.domain()).join("rect").attr("x",k).attr("y",j).attr("width",Math.max(0,k.bandwidth()-1)).attr("height",f-j-i).attr("fill",a),t=()=>{};return o.append("g").attr("transform",`translate(0,${f-i})`).call(d.axisBottom(k).ticks(s,typeof h==="string"?h:void 0).tickFormat(typeof h==="function"?h:void 0).tickSize(b).tickValues(p)).call(t).call(g=>g.select(".domain").remove()).call(g=>g.append("text").attr("x",l).attr("y",j+i-f-6).attr("fill","currentColor").attr("text-anchor","start").attr("font-weight","bold").attr("class","title").text(e)),o.node()}function x(a,e){for(let b of e)if(!a.has(b))return!1;return!0}function y(a,e){let b=new Set(a);for(let c of e)b.add(c);return b}function z(a,e){let b=new Set();for(let c of e)a.has(c)&&b.add(c);return b}function A(a,e){let b=new Set(a);for(let c of e)b.has(c)?b.delete(c):b.add(c);return b}function B(a,e){let b=new Set(a);for(let c of e)b.delete(c);return b}class u{constructor({x:a=0,y:e=0,k:b=1}){this.x=a,this.y=e,this.k=b}toString(){return"translate("+this.x+","+this.y+") scale("+this.k+")"}inverse(){return new u({x:-1/this.k*this.x,y:-1/this.k*this.y,k:1/this.k})}}function C({color:a,element:e,format:b=i=>i,swatchSize:c=15,swatchWidth:f=c,swatchHeight:j=c,marginLeft:m=0}){return d.select(e).html(`<div style="display: flex; align-items: center; min-height: 33px; justify-content: space-between; margin-left: ${+m}px;">
-  ${Object.keys(a).map(i=>`<span class="swatch" style="--color: ${a[i]}">${b(i)}</span>`).join(" ")}</div>`)}function F(a){return`&#${a.charCodeAt(0).toString()};`}function v(a,e=256){const b=document.createElement("canvas");let c=(b.width=e,b.height=1,b).getContext("2d");for(let f=0;f<e;++f)c.fillStyle=a(f/(e-1)),c.fillRect(f,0,1,1);return b}function D(a){let e=a.length,b,c;for(;0!==e;)c=Math.floor(Math.random()*e),e-=1,b=a[e],a[e]=a[c],a[c]=b;return a}export{x as setIsSuperset,y as setUnion,z as setIntersection,A as setSymmetricDifference,B as setDifference,u as RegularTransform,D as arrayShuffle,w as legend,C as swatches};
+import * as d3 from "./web_modules/d3.js"
+
+function legend({
+  color,
+  title,
+  tickSize = 6,
+  width = 320,
+  height = 44 + tickSize,
+  marginTop = 18,
+  marginRight = 0,
+  marginBottom = 16 + tickSize,
+  marginLeft = 0,
+  ticks = width / 64,
+  tickFormat,
+  tickValues
+} = {}) {
+
+  const svg = d3.create("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("viewBox", [0, 0, width, height])
+    .style("overflow", "visible")
+    .style("display", "block");
+
+  let tickAdjust = g => g.selectAll(".tick line").attr("y1", marginTop + marginBottom - height);
+  let x;
+
+  // Continuous
+  if (color.interpolate) {
+    const n = Math.min(color.domain().length, color.range().length);
+
+    x = color.copy().rangeRound(d3.quantize(d3.interpolate(marginLeft, width - marginRight), n));
+
+    svg.append("image")
+      .attr("x", marginLeft)
+      .attr("y", marginTop)
+      .attr("width", width - marginLeft - marginRight)
+      .attr("height", height - marginTop - marginBottom)
+      .attr("preserveAspectRatio", "none")
+      .attr("xlink:href", ramp(color.copy().domain(d3.quantize(d3.interpolate(0, 1), n))).toDataURL());
+  }
+
+  // Sequential
+  else if (color.interpolator) {
+    x = Object.assign(color.copy()
+      .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
+      { range() { return [marginLeft, width - marginRight]; } });
+
+    svg.append("image")
+      .attr("x", marginLeft)
+      .attr("y", marginTop)
+      .attr("width", width - marginLeft - marginRight)
+      .attr("height", height - marginTop - marginBottom)
+      .attr("preserveAspectRatio", "none")
+      .attr("xlink:href", ramp(color.interpolator()).toDataURL());
+
+    // scaleSequentialQuantile doesn’t implement ticks or tickFormat.
+    if (!x.ticks) {
+      if (tickValues === undefined) {
+        const n = Math.round(ticks + 1);
+        tickValues = d3.range(n).map(i => d3.quantile(color.domain(), i / (n - 1)));
+      }
+      if (typeof tickFormat !== "function") {
+        tickFormat = d3.format(tickFormat === undefined ? ",f" : tickFormat);
+      }
+    }
+  }
+
+  // Threshold
+  else if (color.invertExtent) {
+    const thresholds
+      = color.thresholds ? color.thresholds() // scaleQuantize
+        : color.quantiles ? color.quantiles() // scaleQuantile
+          : color.domain(); // scaleThreshold
+
+    const thresholdFormat
+      = tickFormat === undefined ? d => d
+        : typeof tickFormat === "string" ? d3.format(tickFormat)
+          : tickFormat;
+
+    x = d3.scaleLinear()
+      .domain([-1, color.range().length - 1])
+      .rangeRound([marginLeft, width - marginRight]);
+
+    svg.append("g")
+      .selectAll("rect")
+      .data(color.range())
+      .join("rect")
+      .attr("x", (d, i) => x(i - 1))
+      .attr("y", marginTop)
+      .attr("width", (d, i) => x(i) - x(i - 1))
+      .attr("height", height - marginTop - marginBottom)
+      .attr("fill", d => d);
+
+    tickValues = d3.range(thresholds.length);
+    tickFormat = i => thresholdFormat(thresholds[i], i);
+  }
+
+  // Ordinal
+  else {
+    x = d3.scaleBand()
+      .domain(color.domain())
+      .rangeRound([marginLeft, width - marginRight]);
+
+    svg.append("g")
+      .selectAll("rect")
+      .data(color.domain())
+      .join("rect")
+      .attr("x", x)
+      .attr("y", marginTop)
+      .attr("width", Math.max(0, x.bandwidth() - 1))
+      .attr("height", height - marginTop - marginBottom)
+      .attr("fill", color);
+
+    tickAdjust = () => { };
+  }
+
+  svg.append("g")
+    .attr("transform", `translate(0,${height - marginBottom})`)
+    .call(d3.axisBottom(x)
+      .ticks(ticks, typeof tickFormat === "string" ? tickFormat : undefined)
+      .tickFormat(typeof tickFormat === "function" ? tickFormat : undefined)
+      .tickSize(tickSize)
+      .tickValues(tickValues))
+    .call(tickAdjust)
+    .call(g => g.select(".domain").remove())
+    .call(g => g.append("text")
+      .attr("x", marginLeft)
+      .attr("y", marginTop + marginBottom - height - 6)
+      .attr("fill", "currentColor")
+      .attr("text-anchor", "start")
+      .attr("font-weight", "bold")
+      .attr("class", "title")
+      .text(title));
+
+  return svg.node();
+}
+
+function setIsSuperset(set, subset) {
+  for (let elem of subset) {
+    if (!set.has(elem)) {
+      return false
+    }
+  }
+  return true
+}
+
+function setUnion(setA, setB) {
+  let _union = new Set(setA)
+  for (let elem of setB) {
+    _union.add(elem)
+  }
+  return _union
+}
+
+function setIntersection(setA, setB) {
+  let _intersection = new Set()
+  for (let elem of setB) {
+    if (setA.has(elem)) {
+      _intersection.add(elem)
+    }
+  }
+  return _intersection
+}
+
+
+function setSymmetricDifference(setA, setB) {
+  let _difference = new Set(setA)
+  for (let elem of setB) {
+    if (_difference.has(elem)) {
+      _difference.delete(elem)
+    } else {
+      _difference.add(elem)
+    }
+  }
+  return _difference
+}
+
+function setDifference(setA, setB) {
+  let _difference = new Set(setA)
+  for (let elem of setB) {
+    _difference.delete(elem)
+  }
+  return _difference
+}
+
+class RegularTransform {
+  constructor({ x = 0, y = 0, k = 1.0 }) {
+    this.x = x;
+    this.y = y;
+    this.k = k;
+  }
+  toString() {
+    return "translate(" + this.x + "," + this.y + ") scale(" + this.k + ")";
+  }
+  inverse() {
+    return new RegularTransform({ x: -1.0 / this.k * this.x, y: -1.0 / this.k * this.y, k: 1.0 / this.k })
+  }
+}
+
+function swatches({
+  color,
+  element,
+  format = x => x,
+  swatchSize = 15,
+  swatchWidth = swatchSize,
+  swatchHeight = swatchSize,
+  marginLeft = 0
+}) {
+  
+
+  return d3.select(element).html(`<div style="display: flex; align-items: center; min-height: 33px; justify-content: space-between; margin-left: ${+marginLeft}px;">
+  ${Object.keys(color).map(value => `<span class="swatch" style="--color: ${color[value]}">${format(value)}</span>`).join(" ")}</div>`);
+}
+
+
+function entity(character) {
+  return `&#${character.charCodeAt(0).toString()};`;
+}
+
+function ramp(color, n = 256) {
+  const canvas = document.createElement("canvas");
+  let context = (canvas.width = n, canvas.height = 1, canvas).getContext("2d");
+
+  for (let i = 0; i < n; ++i) {
+    context.fillStyle = color(i / (n - 1));
+    context.fillRect(i, 0, 1, 1);
+  }
+  return canvas;
+}
+
+
+function arrayShuffle(array) {
+  let currentIndex = array.length, temporaryValue, randomIndex;
+
+  // While there remain elements to shuffle...
+  while (0 !== currentIndex) {
+
+    // Pick a remaining element...
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    // And swap it with the current element.
+    temporaryValue = array[currentIndex];
+    array[currentIndex] = array[randomIndex];
+    array[randomIndex] = temporaryValue;
+  }
+
+  return array;
+}
+export {
+  setIsSuperset,
+  setUnion,
+  setIntersection,
+  setSymmetricDifference,
+  setDifference,
+  RegularTransform,
+  arrayShuffle,
+  legend,
+  swatches,
+};
+
